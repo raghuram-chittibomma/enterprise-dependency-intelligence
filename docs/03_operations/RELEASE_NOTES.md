@@ -19,6 +19,7 @@ Newest entry first. One entry per release/milestone.
 - Data quality checks (`src/quality/`): automated graph invariants (no duplicate natural keys, no duplicate names per label, referential consistency, no orphan nodes, required provenance fields) as both a pure-function library and a CLI (`src/quality/run.py`) that exits non-zero on error-severity issues. The freshly ingested golden dataset (45 nodes, 101 relationships) passes with zero issues.
 - **FR1 entity search**, and with it the first usable slice of the app: a FastAPI + Jinja2 + HTMX web UI (`src/api/`, `src/web/`) at `/`, backed by a word-alignment-aware fuzzy search (`src/graph/queries.py::search_entities`) tuned against the real dataset to tolerate typos and word reordering without false-positiving on unrelated multi-word names.
 - **FR2 entity detail page** (`/entities/{id}`): full metadata (type, description, criticality, lifecycle, owning team, and every type-specific property) for any of the 9 node types, with the owning team itself linking back into the same detail view. Search results now link through to it.
+- **FR3 direct dependencies**, added to the same detail page: "Depends on" (upstream) and "Depended on by" (downstream) lists, restricted to the 4 relationship types that represent an actual functional dependency (`CONSUMES`/`READS_FROM`/`WRITES_TO`/`INTEGRATES_WITH`), each entry linking onward and labeled with its relationship type.
 
 ### Changed
 

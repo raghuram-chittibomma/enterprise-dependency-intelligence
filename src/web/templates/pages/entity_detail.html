@@ -48,4 +48,42 @@
 
   <p class="entity-source">Source: {{ entity.source_system }} (record {{ entity.source_record_id }})</p>
 </section>
+
+<section class="dependency-section">
+  <h2>Depends on ({{ dependencies.upstream | length }})</h2>
+  {% if dependencies.upstream %}
+  <ul class="dependency-list">
+    {% for edge in dependencies.upstream %}
+    <li class="dependency-item">
+      <a href="/entities/{{ edge.entity.id }}">
+        <span class="entity-label">{{ edge.entity.label }}</span>
+        <span class="entity-name">{{ edge.entity.name }}</span>
+      </a>
+      <span class="rel-type-badge">{{ edge.rel_type }}</span>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="entity-metadata-empty">No direct upstream dependencies.</p>
+  {% endif %}
+</section>
+
+<section class="dependency-section">
+  <h2>Depended on by ({{ dependencies.downstream | length }})</h2>
+  {% if dependencies.downstream %}
+  <ul class="dependency-list">
+    {% for edge in dependencies.downstream %}
+    <li class="dependency-item">
+      <a href="/entities/{{ edge.entity.id }}">
+        <span class="entity-label">{{ edge.entity.label }}</span>
+        <span class="entity-name">{{ edge.entity.name }}</span>
+      </a>
+      <span class="rel-type-badge">{{ edge.rel_type }}</span>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="entity-metadata-empty">Nothing depends directly on this entity.</p>
+  {% endif %}
+</section>
 {% endblock %}

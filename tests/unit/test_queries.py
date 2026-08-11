@@ -1,15 +1,15 @@
-"""Unit tests for FR1 (entity search) and FR2 (entity detail) in
-`src/graph/queries.py`, against the fallback store seeded with a handful of
-hand-written nodes -- small, synthetic, scoped to the unit under test, per
-`docs/02_testing/TEST_STRATEGY.md`.
+"""Unit tests for FR1 (entity search), FR2 (entity detail), and FR3 (direct
+dependencies) in `src/graph/queries.py`, against the fallback store seeded
+with a handful of hand-written nodes -- small, synthetic, scoped to the
+unit under test, per `docs/02_testing/TEST_STRATEGY.md`.
 """
 
 from __future__ import annotations
 
 from src.graph.fallback_store import FallbackGraphStore
-from src.graph.queries import get_entity_detail, search_entities
+from src.graph.queries import get_direct_dependencies, get_entity_detail, search_entities
 from src.ontology.entities import API, Application, Database, Team
-from src.ontology.relationships import OwnedBy
+from src.ontology.relationships import Consumes, OwnedBy, ReadsFrom
 
 
 def _seed_store() -> FallbackGraphStore:
@@ -91,6 +91,28 @@ def _seed_store() -> FallbackGraphStore:
         ),
         "Application",
         "Team",
+    )
+    store.upsert_relationship(
+        "CONSUMES",
+        Consumes(
+            source_id="app:cmdb:1",
+            target_id="api:api-catalog:1",
+            source_system="api-catalog",
+            source_record_id="1",
+        ),
+        "Application",
+        "API",
+    )
+    store.upsert_relationship(
+        "READS_FROM",
+        ReadsFrom(
+            source_id="api:api-catalog:1",
+            target_id="db:db-metadata:1",
+            source_system="db-metadata",
+            source_record_id="1",
+        ),
+        "API",
+        "Database",
     )
     return store
 
@@ -213,3 +235,57 @@ class TestGetEntityDetail:
         assert detail.source_system == "cmdb"
         assert detail.source_record_id == "1"
         assert detail.ingested_at
+
+
+class TestGetDirectDependencies:
+    def test_returns_none_for_unknown_id(self) -> None:
+        store = _seed_store()
+        assert get_direct_dependencies(store, "does-not-exist") is None
+
+    def test_upstream_is_what_the_entity_depends_on(self) -> None:
+        store = _seed_store()
+        deps = get_direct_dependencies(store, "app:cmdb:1")
+        assert deps is not None
+        assert len(deps.upstream) == 1
+        assert deps.upstream[0].entity.id == "api:api-catalog:1"
+        assert deps.upstream[0].rel_type == "CONSUMES"
+
+    def test_downstream_is_what_depends_on_the_entity(self) -> None:
+        store = _seed_store()
+        deps = get_direct_dependencies(store, "api:api-catalog:1")
+        assert deps is not None
+        assert len(deps.downstream) == 1
+        assert deps.downstream[0].entity.id == "app:cmdb:1"
+        assert deps.downstream[0].rel_type == "CONSUMES"
+
+    def test_an_entity_can_have_both_upstream_and_downstream(self) -> None:
+        store = _seed_store()
+        deps = get_direct_dependencies(store, "api:api-catalog:1")
+        assert deps is not None
+        assert {e.entity.id for e in deps.upstream} == {"db:db-metadata:1"}
+        assert {e.entity.id for e in deps.downstream} == {"app:cmdb:1"}
+
+    def test_is_direct_only_not_transitive(self) -> None:
+        # Storefront -CONSUMES-> Customer API v1 -READS_FROM-> OrdersDB:
+        # Storefront's direct upstream is only the API, not the database
+        # two hops away.
+        store = _seed_store()
+        deps = get_direct_dependencies(store, "app:cmdb:1")
+        assert deps is not None
+        assert "db:db-metadata:1" not in {e.entity.id for e in deps.upstream}
+
+    def test_ownership_and_other_non_dependency_edges_are_excluded(self) -> None:
+        # Storefront is OWNED_BY the Commerce Platform Team -- that's not a
+        # dependency edge (DATA_MODEL.md), so the team must not appear here.
+        store = _seed_store()
+        deps = get_direct_dependencies(store, "app:cmdb:1")
+        assert deps is not None
+        all_ids = {e.entity.id for e in deps.upstream} | {e.entity.id for e in deps.downstream}
+        assert "team:team-ownership:1" not in all_ids
+
+    def test_entity_with_no_dependency_edges_returns_empty_lists(self) -> None:
+        store = _seed_store()
+        deps = get_direct_dependencies(store, "app:cmdb:3")  # Customer Portal
+        assert deps is not None
+        assert deps.upstream == []
+        assert deps.downstream == []

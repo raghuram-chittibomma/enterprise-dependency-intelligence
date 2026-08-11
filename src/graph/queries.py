@@ -77,6 +77,51 @@ class EntityDetail:
     ingested_at: str
 
 
+# The 4 relationship types that represent an actual functional dependency
+# (DATA_MODEL.md: "`DEPENDS_ON` is intentionally never persisted" -- FR3's
+# upstream/downstream is answered by traversing these instead). OWNED_BY
+# (ownership), SUPPORTS (business-capability), and REPLACED_BY (lifecycle)
+# are deliberately excluded -- they're real edges, just not *dependency*
+# edges.
+DEPENDENCY_REL_TYPES = frozenset({"CONSUMES", "READS_FROM", "WRITES_TO", "INTEGRATES_WITH"})
+
+
+@dataclass(frozen=True)
+class EntityRef:
+    """A lightweight reference to another entity -- enough to render a
+    linked badge/name in a list (search results, dependency lists, ...)
+    without pulling in that entity's full detail.
+    """
+
+    id: str
+    label: str
+    name: str
+    criticality: str | None
+    lifecycle_status: str
+
+
+@dataclass(frozen=True)
+class DependencyEdge:
+    entity: EntityRef
+    rel_type: str
+
+
+@dataclass(frozen=True)
+class DirectDependencies:
+    upstream: list[DependencyEdge]  # entities this entity depends on (outbound)
+    downstream: list[DependencyEdge]  # entities that depend on this entity (inbound)
+
+
+def _entity_ref(node: dict) -> EntityRef:
+    return EntityRef(
+        id=node["id"],
+        label=node["label"],
+        name=node["name"],
+        criticality=node.get("criticality"),
+        lifecycle_status=node.get("lifecycle_status", "active"),
+    )
+
+
 def _per_word_alignment_score(query_words: list[str], name_words: list[str]) -> float:
     """The *worst*-matching query word's best available match among the
     name's words. Taking the min (not average/max) across query words means
@@ -183,3 +228,32 @@ def get_entity_detail(store: GraphStore, entity_id: str) -> EntityDetail | None:
         source_record_id=node["source_record_id"],
         ingested_at=str(node.get("ingested_at", "")),
     )
+
+
+def get_direct_dependencies(store: GraphStore, entity_id: str) -> DirectDependencies | None:
+    """FR3: direct (exactly one-hop) upstream and downstream dependencies of
+    an entity -- upstream is what it depends on (outbound dependency
+    edges), downstream is what depends on it (inbound dependency edges),
+    per the glossary in `PRODUCT_BRIEF.md`. Returns `None` if `entity_id`
+    doesn't match any node.
+    """
+    nodes = store.get_all_nodes()
+    node_by_id = {n["id"]: n for n in nodes}
+    if entity_id not in node_by_id:
+        return None
+
+    upstream: list[DependencyEdge] = []
+    downstream: list[DependencyEdge] = []
+    for rel in store.get_all_relationships():
+        if rel["rel_type"] not in DEPENDENCY_REL_TYPES:
+            continue
+        if rel["source_id"] == entity_id and rel["target_id"] in node_by_id:
+            other = node_by_id[rel["target_id"]]
+            upstream.append(DependencyEdge(entity=_entity_ref(other), rel_type=rel["rel_type"]))
+        if rel["target_id"] == entity_id and rel["source_id"] in node_by_id:
+            other = node_by_id[rel["source_id"]]
+            downstream.append(DependencyEdge(entity=_entity_ref(other), rel_type=rel["rel_type"]))
+
+    upstream.sort(key=lambda edge: (edge.rel_type, edge.entity.name))
+    downstream.sort(key=lambda edge: (edge.rel_type, edge.entity.name))
+    return DirectDependencies(upstream=upstream, downstream=downstream)

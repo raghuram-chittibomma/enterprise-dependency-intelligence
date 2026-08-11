@@ -1,4 +1,5 @@
-"""FR2: entity detail page -- the destination search results (FR1) link to.
+"""FR2 (metadata) + FR3 (direct dependencies): the entity detail page --
+the destination search results (FR1) link to.
 """
 
 from __future__ import annotations
@@ -7,7 +8,7 @@ from fastapi import APIRouter, Depends, Request
 from fastapi.responses import HTMLResponse
 
 from src.api.deps import get_store
-from src.graph.queries import get_entity_detail
+from src.graph.queries import get_direct_dependencies, get_entity_detail
 from src.graph.store import GraphStore
 
 router = APIRouter()
@@ -26,6 +27,9 @@ async def entity_detail(
             context={"entity_id": entity_id},
             status_code=404,
         )
+    dependencies = get_direct_dependencies(store, entity_id)
     return templates.TemplateResponse(
-        request=request, name="pages/entity_detail.html", context={"entity": detail}
+        request=request,
+        name="pages/entity_detail.html",
+        context={"entity": detail, "dependencies": dependencies},
     )

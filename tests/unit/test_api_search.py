@@ -13,8 +13,8 @@ from fastapi.testclient import TestClient
 from src.api.deps import get_store
 from src.api.main import app
 from src.graph.fallback_store import FallbackGraphStore
-from src.ontology.entities import API, Application, Team
-from src.ontology.relationships import OwnedBy
+from src.ontology.entities import API, Application, Database, Team
+from src.ontology.relationships import Consumes, OwnedBy, ReadsFrom
 
 
 @pytest.fixture
@@ -67,6 +67,38 @@ def client(monkeypatch):
         ),
         "Application",
         "Team",
+    )
+    seeded.upsert_node(
+        "Database",
+        Database(
+            id="db:db-metadata:1",
+            name="OrdersDB",
+            source_system="db-metadata",
+            source_record_id="1",
+            engine="PostgreSQL",
+        ),
+    )
+    seeded.upsert_relationship(
+        "CONSUMES",
+        Consumes(
+            source_id="app:cmdb:1",
+            target_id="api:api-catalog:1",
+            source_system="api-catalog",
+            source_record_id="1",
+        ),
+        "Application",
+        "API",
+    )
+    seeded.upsert_relationship(
+        "READS_FROM",
+        ReadsFrom(
+            source_id="api:api-catalog:1",
+            target_id="db:db-metadata:1",
+            source_system="db-metadata",
+            source_record_id="1",
+        ),
+        "API",
+        "Database",
     )
     app.dependency_overrides[get_store] = lambda: seeded
 
@@ -146,3 +178,24 @@ class TestEntityDetailRoute:
         response = client.get("/entities/app:cmdb:1")
         assert response.status_code == 200
         assert "cmdb" in response.text
+
+
+class TestDirectDependenciesOnDetailPage:
+    def test_shows_upstream_dependency_with_relationship_type(self, client: TestClient) -> None:
+        response = client.get("/entities/app:cmdb:1")
+        assert response.status_code == 200
+        assert "Depends on (1)" in response.text
+        assert 'href="/entities/api:api-catalog:1"' in response.text
+        assert "CONSUMES" in response.text
+
+    def test_shows_downstream_dependents(self, client: TestClient) -> None:
+        response = client.get("/entities/api:api-catalog:1")
+        assert response.status_code == 200
+        assert "Depended on by (1)" in response.text
+        assert 'href="/entities/app:cmdb:1"' in response.text
+
+    def test_entity_with_no_dependencies_shows_empty_state(self, client: TestClient) -> None:
+        response = client.get("/entities/db:db-metadata:1")
+        assert response.status_code == 200
+        assert "Nothing depends directly on this entity." not in response.text
+        assert "No direct upstream dependencies." in response.text
