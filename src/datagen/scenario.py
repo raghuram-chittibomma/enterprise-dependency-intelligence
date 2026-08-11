@@ -21,6 +21,21 @@ from __future__ import annotations
 
 from typing import Literal, TypedDict
 
+from src.ingestion.capability_taxonomy import CAPABILITY_AREAS
+
+__all__ = [
+    "APIS",
+    "APPLICATIONS",
+    "CAPABILITY_AREAS",
+    "DATABASES",
+    "DATA_PIPELINES",
+    "INTEGRATIONS",
+    "REPORTS",
+    "SERVICES",
+    "TEAM_OWNERSHIP",
+    "SystemRef",
+]
+
 
 class SystemRef(TypedDict):
     name: str
@@ -29,16 +44,11 @@ class SystemRef(TypedDict):
 
 # Business capabilities are not their own source file — they're derived from
 # the `business_capability` field on CMDB and API Catalog records the first
-# time each capability name is seen. This lookup supplies the `capability_area`
-# grouping property that those source records don't otherwise carry.
-CAPABILITY_AREAS: dict[str, str] = {
-    "Customer Management": "Customer",
-    "Product Catalog": "Commerce",
-    "Order Management": "Commerce",
-    "Inventory Management": "Commerce",
-    "Payments & Billing": "Finance",
-    "Fulfillment & Shipping": "Operations",
-}
+# time each capability name is seen. `CAPABILITY_AREAS` (imported above from
+# `src/ingestion/capability_taxonomy.py`, ingestion's own reference data) is
+# what supplies the `capability_area` grouping property those records don't
+# otherwise carry -- re-exported here so scenario cross-reference tests can
+# check every `business_capability` value used below is a known capability.
 
 # --------------------------------------------------------------------------
 # Source 1: CMDB / Technology Inventory (-> data/sample/cmdb.csv)
