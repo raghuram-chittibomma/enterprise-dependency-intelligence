@@ -1,0 +1,6 @@
+source_system_name,source_system_type,target_system_name,target_system_vendor,target_system_category,integration_type,protocol,frequency
+Order Management,application,Stripe,Stripe,payment-gateway,api,HTTPS/REST,real-time
+Warehouse Management App,application,FedEx Shipping API,FedEx,logistics-carrier,api,HTTPS/REST,real-time
+Shipping Service,service,FedEx Shipping API,FedEx,logistics-carrier,api,HTTPS/REST,real-time
+Marketing Automation Hub,application,Mailchimp,Mailchimp,marketing-saas,batch-file,SFTP,daily
+Admin Console,application,Salesforce,Salesforce,saas-crm,api,HTTPS/REST,real-time

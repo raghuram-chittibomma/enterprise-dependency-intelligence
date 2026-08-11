@@ -1,0 +1,144 @@
+[
+  {
+    "record_id": "API-001",
+    "name": "Customer API v1",
+    "version": "v1",
+    "protocol": "REST",
+    "criticality": "critical",
+    "lifecycle_status": "active",
+    "implementing_application": "Customer Service",
+    "backend_service": "Customer Service",
+    "consuming_applications": [
+      {
+        "name": "Storefront",
+        "type": "application"
+      },
+      {
+        "name": "Customer Portal",
+        "type": "application"
+      },
+      {
+        "name": "Order Service",
+        "type": "service"
+      }
+    ],
+    "business_capability": "Customer Management"
+  },
+  {
+    "record_id": "API-002",
+    "name": "Order API v1",
+    "version": "v1",
+    "protocol": "REST",
+    "criticality": "critical",
+    "lifecycle_status": "active",
+    "implementing_application": "Order Service",
+    "backend_service": "Order Service",
+    "consuming_applications": [
+      {
+        "name": "Storefront",
+        "type": "application"
+      },
+      {
+        "name": "Point of Sale",
+        "type": "application"
+      },
+      {
+        "name": "Order Management",
+        "type": "application"
+      }
+    ],
+    "business_capability": "Order Management"
+  },
+  {
+    "record_id": "API-003",
+    "name": "Product API v1",
+    "version": "v1",
+    "protocol": "REST",
+    "criticality": "high",
+    "lifecycle_status": "active",
+    "implementing_application": "Pricing Service",
+    "backend_service": "Pricing Service",
+    "consuming_applications": [
+      {
+        "name": "Storefront",
+        "type": "application"
+      },
+      {
+        "name": "Point of Sale",
+        "type": "application"
+      },
+      {
+        "name": "Order Management",
+        "type": "application"
+      }
+    ],
+    "business_capability": "Product Catalog"
+  },
+  {
+    "record_id": "API-004",
+    "name": "Inventory API v1",
+    "version": "v1",
+    "protocol": "REST",
+    "criticality": "high",
+    "lifecycle_status": "active",
+    "implementing_application": "Inventory Service",
+    "backend_service": "Inventory Service",
+    "consuming_applications": [
+      {
+        "name": "Order Management",
+        "type": "application"
+      },
+      {
+        "name": "Warehouse Management App",
+        "type": "application"
+      },
+      {
+        "name": "Point of Sale",
+        "type": "application"
+      }
+    ],
+    "business_capability": "Inventory Management"
+  },
+  {
+    "record_id": "API-005",
+    "name": "Payment API v1",
+    "version": "v1",
+    "protocol": "REST",
+    "criticality": "critical",
+    "lifecycle_status": "active",
+    "implementing_application": null,
+    "backend_service": null,
+    "consuming_applications": [
+      {
+        "name": "Order Management",
+        "type": "application"
+      },
+      {
+        "name": "Point of Sale",
+        "type": "application"
+      }
+    ],
+    "business_capability": "Payments & Billing"
+  },
+  {
+    "record_id": "API-006",
+    "name": "Shipping API v1",
+    "version": "v1",
+    "protocol": "REST",
+    "criticality": "high",
+    "lifecycle_status": "active",
+    "implementing_application": "Shipping Service",
+    "backend_service": "Shipping Service",
+    "consuming_applications": [
+      {
+        "name": "Order Management",
+        "type": "application"
+      },
+      {
+        "name": "Warehouse Management App",
+        "type": "application"
+      }
+    ],
+    "business_capability": "Fulfillment & Shipping"
+  }
+]

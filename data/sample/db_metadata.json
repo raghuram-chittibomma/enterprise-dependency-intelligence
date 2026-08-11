@@ -1,0 +1,195 @@
+[
+  {
+    "record_id": "DB-001",
+    "name": "Customer Database",
+    "engine": "PostgreSQL",
+    "key_tables": [
+      "customers",
+      "customer_addresses",
+      "customer_preferences"
+    ],
+    "criticality": "critical",
+    "lifecycle_status": "active",
+    "writers": [
+      {
+        "name": "Customer Service",
+        "type": "service"
+      }
+    ],
+    "readers": [
+      {
+        "name": "Customer Service",
+        "type": "service"
+      },
+      {
+        "name": "Admin Console",
+        "type": "application"
+      },
+      {
+        "name": "Marketing Automation Hub",
+        "type": "application"
+      },
+      {
+        "name": "Customer Data Sync",
+        "type": "data_pipeline"
+      }
+    ]
+  },
+  {
+    "record_id": "DB-002",
+    "name": "Order Database",
+    "engine": "PostgreSQL",
+    "key_tables": [
+      "orders",
+      "order_items"
+    ],
+    "criticality": "critical",
+    "lifecycle_status": "active",
+    "writers": [
+      {
+        "name": "Order Service",
+        "type": "service"
+      }
+    ],
+    "readers": [
+      {
+        "name": "Order Service",
+        "type": "service"
+      },
+      {
+        "name": "Order Management",
+        "type": "application"
+      },
+      {
+        "name": "Nightly Order ETL",
+        "type": "data_pipeline"
+      }
+    ]
+  },
+  {
+    "record_id": "DB-003",
+    "name": "Product Database",
+    "engine": "MySQL",
+    "key_tables": [
+      "products",
+      "categories",
+      "pricing_rules"
+    ],
+    "criticality": "high",
+    "lifecycle_status": "active",
+    "writers": [
+      {
+        "name": "Pricing Service",
+        "type": "service"
+      }
+    ],
+    "readers": [
+      {
+        "name": "Pricing Service",
+        "type": "service"
+      },
+      {
+        "name": "Point of Sale",
+        "type": "application"
+      }
+    ]
+  },
+  {
+    "record_id": "DB-004",
+    "name": "Inventory Database",
+    "engine": "PostgreSQL",
+    "key_tables": [
+      "inventory_levels",
+      "warehouses"
+    ],
+    "criticality": "high",
+    "lifecycle_status": "active",
+    "writers": [
+      {
+        "name": "Inventory Service",
+        "type": "service"
+      },
+      {
+        "name": "Warehouse Management App",
+        "type": "application"
+      }
+    ],
+    "readers": [
+      {
+        "name": "Inventory Service",
+        "type": "service"
+      },
+      {
+        "name": "Warehouse Management App",
+        "type": "application"
+      },
+      {
+        "name": "Inventory Reconciliation ETL",
+        "type": "data_pipeline"
+      },
+      {
+        "name": "Inventory Health Report",
+        "type": "report"
+      }
+    ]
+  },
+  {
+    "record_id": "DB-005",
+    "name": "Payments Database",
+    "engine": "PostgreSQL",
+    "key_tables": [
+      "transactions",
+      "refunds"
+    ],
+    "criticality": "critical",
+    "lifecycle_status": "active",
+    "writers": [
+      {
+        "name": "Payment API v1",
+        "type": "api"
+      }
+    ],
+    "readers": [
+      {
+        "name": "Payment API v1",
+        "type": "api"
+      }
+    ]
+  },
+  {
+    "record_id": "DB-006",
+    "name": "Analytics Warehouse",
+    "engine": "Snowflake",
+    "key_tables": [
+      "fact_orders",
+      "fact_customers",
+      "fact_inventory"
+    ],
+    "criticality": "medium",
+    "lifecycle_status": "active",
+    "writers": [
+      {
+        "name": "Nightly Order ETL",
+        "type": "data_pipeline"
+      },
+      {
+        "name": "Customer Data Sync",
+        "type": "data_pipeline"
+      },
+      {
+        "name": "Inventory Reconciliation ETL",
+        "type": "data_pipeline"
+      }
+    ],
+    "readers": [
+      {
+        "name": "Executive Sales Dashboard",
+        "type": "report"
+      },
+      {
+        "name": "Inventory Health Report",
+        "type": "report"
+      }
+    ]
+  }
+]

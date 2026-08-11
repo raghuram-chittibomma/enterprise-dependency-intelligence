@@ -1,0 +1,172 @@
+[
+  {
+    "team_id": "TEAM-001",
+    "name": "Commerce Platform Team",
+    "business_area": "Commerce",
+    "description": "Owns the storefront, point-of-sale, and product/pricing platform.",
+    "architecture_contact": "[email protected]",
+    "support_contact": "[email protected]",
+    "systems_owned": [
+      {
+        "name": "Storefront",
+        "type": "application"
+      },
+      {
+        "name": "Point of Sale",
+        "type": "application"
+      },
+      {
+        "name": "Pricing Service",
+        "type": "service"
+      },
+      {
+        "name": "Product API v1",
+        "type": "api"
+      },
+      {
+        "name": "Product Database",
+        "type": "database"
+      }
+    ]
+  },
+  {
+    "team_id": "TEAM-002",
+    "name": "Order & Fulfillment Team",
+    "business_area": "Operations",
+    "description": "Owns order management, inventory, and shipping.",
+    "architecture_contact": "[email protected]",
+    "support_contact": "[email protected]",
+    "systems_owned": [
+      {
+        "name": "Order Management",
+        "type": "application"
+      },
+      {
+        "name": "Warehouse Management App",
+        "type": "application"
+      },
+      {
+        "name": "Order Service",
+        "type": "service"
+      },
+      {
+        "name": "Inventory Service",
+        "type": "service"
+      },
+      {
+        "name": "Shipping Service",
+        "type": "service"
+      },
+      {
+        "name": "Order API v1",
+        "type": "api"
+      },
+      {
+        "name": "Inventory API v1",
+        "type": "api"
+      },
+      {
+        "name": "Shipping API v1",
+        "type": "api"
+      },
+      {
+        "name": "Order Database",
+        "type": "database"
+      },
+      {
+        "name": "Inventory Database",
+        "type": "database"
+      }
+    ]
+  },
+  {
+    "team_id": "TEAM-003",
+    "name": "Customer Experience Team",
+    "business_area": "Customer",
+    "description": "Owns customer-facing account, support, and engagement surfaces.",
+    "architecture_contact": "[email protected]",
+    "support_contact": "[email protected]",
+    "systems_owned": [
+      {
+        "name": "Customer Portal",
+        "type": "application"
+      },
+      {
+        "name": "Admin Console",
+        "type": "application"
+      },
+      {
+        "name": "Marketing Automation Hub",
+        "type": "application"
+      },
+      {
+        "name": "Customer Engagement Platform",
+        "type": "application"
+      },
+      {
+        "name": "Customer Service",
+        "type": "service"
+      },
+      {
+        "name": "Customer API v1",
+        "type": "api"
+      },
+      {
+        "name": "Customer Database",
+        "type": "database"
+      }
+    ]
+  },
+  {
+    "team_id": "TEAM-004",
+    "name": "Payments Team",
+    "business_area": "Finance",
+    "description": "Owns payment processing and the payments ledger.",
+    "architecture_contact": "[email protected]",
+    "support_contact": "[email protected]",
+    "systems_owned": [
+      {
+        "name": "Payment API v1",
+        "type": "api"
+      },
+      {
+        "name": "Payments Database",
+        "type": "database"
+      }
+    ]
+  },
+  {
+    "team_id": "TEAM-005",
+    "name": "Data Platform Team",
+    "business_area": "Data & Analytics",
+    "description": "Owns the analytics warehouse and enterprise reporting pipelines.",
+    "architecture_contact": "[email protected]",
+    "support_contact": "[email protected]",
+    "systems_owned": [
+      {
+        "name": "Nightly Order ETL",
+        "type": "data_pipeline"
+      },
+      {
+        "name": "Customer Data Sync",
+        "type": "data_pipeline"
+      },
+      {
+        "name": "Inventory Reconciliation ETL",
+        "type": "data_pipeline"
+      },
+      {
+        "name": "Analytics Warehouse",
+        "type": "database"
+      },
+      {
+        "name": "Executive Sales Dashboard",
+        "type": "report"
+      },
+      {
+        "name": "Inventory Health Report",
+        "type": "report"
+      }
+    ]
+  }
+]
