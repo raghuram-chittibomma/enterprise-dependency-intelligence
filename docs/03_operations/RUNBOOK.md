@@ -64,6 +64,7 @@ pip install -e ../enterprise-sdlc-mcp   # build-time MCP server, editable instal
 
 python -m src.datagen.generate          # (re)generate the synthetic Meridian Retail Group dataset -> data/sample/
 python -m src.ingestion.run             # idempotent ingestion into the graph store
+python -m src.quality.run               # data-quality invariants against the ingested graph; exit 1 on error
 uvicorn src.api.main:app --reload       # run the app -> http://127.0.0.1:8000
 ```
 
@@ -95,6 +96,7 @@ None for MVP1. NL query requests are logged as structured JSON lines to a local 
 |---|---|
 | Regenerate synthetic dataset | `python -m src.datagen.generate` |
 | Re-run ingestion (idempotent) | `python -m src.ingestion.run` |
+| Check graph data quality | `python -m src.quality.run` |
 | Reset the graph store | `docker-compose down -v && docker-compose up -d neo4j` |
 | Check for missing manifest keys | MCP tool `validate_manifest` |
 

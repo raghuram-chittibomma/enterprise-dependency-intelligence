@@ -10,7 +10,7 @@ Read by: Test/Eval Designer Agent, Code Reviewer Agent, `test-eval-design` skill
 |-------|-----------------|----------|-----------|
 | Unit | Source parsers (one per MVP1 source), entity resolution (all 4 resolution steps in `ADR-0002`), Cypher query template builders, NL query intent classification, answer string templates. | `tests/unit/` | Every commit |
 | Integration | End-to-end ingestion (source file → resolved, provenance-tagged graph) against a real (or fallback) graph store; API routes for search/detail/traversal/paths/ownership/capabilities/NL query against a seeded graph. | `tests/integration/` | Every commit |
-| Data quality | Automated graph invariants: no orphan nodes, no duplicate natural keys, referential consistency (every relationship endpoint resolves to an existing node), no node/relationship missing required provenance fields. | `tests/quality/` (increment-5) | After every ingestion run; every commit touching ingestion or the ontology |
+| Data quality | Automated graph invariants: no orphan nodes, no duplicate natural keys, referential consistency (every relationship endpoint resolves to an existing node), no node/relationship missing required provenance fields. | `tests/quality/`, CLI at `src/quality/run.py` | After every ingestion run; every commit touching ingestion or the ontology |
 | Golden dataset (eval) | The 7 supported NL questions, plus representative FR1–FR10/FR12/FR13 scenarios, each with an expected answer/entity set/path. Must be 100% pass — a failure is a bug, not a quality score. | `evals/` | Every commit touching graph queries, NL query, or the ontology; required before increment-15 release sign-off |
 
 ## Coverage expectations

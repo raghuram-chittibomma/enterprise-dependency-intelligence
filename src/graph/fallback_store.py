@@ -117,5 +117,23 @@ class FallbackGraphStore:
             ).fetchone()[0]
         return self._conn.execute("SELECT COUNT(*) FROM relationships").fetchone()[0]
 
+    def get_all_nodes(self) -> list[dict]:
+        rows = self._conn.execute("SELECT id, label, properties FROM nodes")
+        return [{"label": label, **json.loads(properties)} for _id, label, properties in rows]
+
+    def get_all_relationships(self) -> list[dict]:
+        rows = self._conn.execute(
+            "SELECT source_id, target_id, rel_type, properties FROM relationships"
+        )
+        return [
+            {
+                "rel_type": rel_type,
+                "source_id": source_id,
+                "target_id": target_id,
+                **json.loads(properties),
+            }
+            for source_id, target_id, rel_type, properties in rows
+        ]
+
     def close(self) -> None:
         self._conn.close()

@@ -82,3 +82,46 @@ class TestNeo4jGraphStore:
             ).single()
         assert record is not None
         assert record["a"]["name"] == "Integration Test App"
+
+    def test_get_all_nodes_and_relationships_include_upserted_data(
+        self, store: Neo4jGraphStore
+    ) -> None:
+        app = Application(
+            id="app:integration-test:2",
+            name="Integration Test App 2",
+            source_system="integration-test",
+            source_record_id="2",
+            technology="Test",
+            environment="test",
+        )
+        team = Team(
+            id="team:integration-test:2",
+            name="Integration Test Team 2",
+            source_system="integration-test",
+            source_record_id="2",
+            business_area="Test",
+        )
+        store.upsert_node("Application", app)
+        store.upsert_node("Team", team)
+        rel = OwnedBy(
+            source_id=app.id,
+            target_id=team.id,
+            source_system="integration-test",
+            source_record_id="2",
+        )
+        store.upsert_relationship("OWNED_BY", rel, "Application", "Team")
+
+        nodes = store.get_all_nodes()
+        node_by_id = {node["id"]: node for node in nodes}
+        assert node_by_id[app.id]["label"] == "Application"
+        assert node_by_id[app.id]["name"] == "Integration Test App 2"
+        assert node_by_id[team.id]["label"] == "Team"
+
+        relationships = store.get_all_relationships()
+        matching = [
+            rel
+            for rel in relationships
+            if rel["source_id"] == app.id and rel["target_id"] == team.id
+        ]
+        assert len(matching) == 1
+        assert matching[0]["rel_type"] == "OWNED_BY"

@@ -71,5 +71,26 @@ class Neo4jGraphStore:
         with self._driver.session() as session:
             return session.run(query).single()["c"]
 
+    def get_all_nodes(self) -> list[dict]:
+        with self._driver.session() as session:
+            result = session.run("MATCH (n) RETURN labels(n) AS labels, properties(n) AS props")
+            return [{"label": record["labels"][0], **record["props"]} for record in result]
+
+    def get_all_relationships(self) -> list[dict]:
+        with self._driver.session() as session:
+            result = session.run(
+                "MATCH (s)-[r]->(t) RETURN type(r) AS rel_type, s.id AS source_id, "
+                "t.id AS target_id, properties(r) AS props"
+            )
+            return [
+                {
+                    "rel_type": record["rel_type"],
+                    "source_id": record["source_id"],
+                    "target_id": record["target_id"],
+                    **record["props"],
+                }
+                for record in result
+            ]
+
     def close(self) -> None:
         self._driver.close()

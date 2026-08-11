@@ -40,4 +40,18 @@ class GraphStore(Protocol):
 
     def count_relationships(self, rel_type: str | None = None) -> int: ...
 
+    def get_all_nodes(self) -> list[dict]:
+        """Every node in the graph as a flat dict of its properties plus a
+        `label` key -- the read-everything escape hatch used by the
+        data-quality checks (increment-5), which need to see the whole graph
+        rather than one targeted query at a time.
+        """
+        ...
+
+    def get_all_relationships(self) -> list[dict]:
+        """Every relationship in the graph as a flat dict of its properties
+        plus `rel_type`, `source_id`, `target_id` keys. See `get_all_nodes`.
+        """
+        ...
+
     def close(self) -> None: ...

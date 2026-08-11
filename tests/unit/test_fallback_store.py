@@ -84,3 +84,30 @@ class TestFallbackGraphStore:
         reloaded = FallbackGraphStore(sqlite_path=db_path)
         assert reloaded.count_nodes() == 1
         assert "app:cmdb:1" in reloaded.graph.nodes
+
+    def test_get_all_nodes_returns_flat_dicts_with_label(self) -> None:
+        store = FallbackGraphStore()
+        store.upsert_node("Application", _make_app())
+        nodes = store.get_all_nodes()
+        assert len(nodes) == 1
+        assert nodes[0]["id"] == "app:cmdb:1"
+        assert nodes[0]["label"] == "Application"
+        assert nodes[0]["name"] == "Storefront"
+
+    def test_get_all_relationships_returns_flat_dicts_with_endpoints(self) -> None:
+        store = FallbackGraphStore()
+        store.upsert_node("Application", _make_app())
+        store.upsert_node("Team", _make_team())
+        rel = OwnedBy(
+            source_id="app:cmdb:1",
+            target_id="team:team-ownership:1",
+            source_system="team-ownership",
+            source_record_id="1",
+        )
+        store.upsert_relationship("OWNED_BY", rel, "Application", "Team")
+        rels = store.get_all_relationships()
+        assert len(rels) == 1
+        assert rels[0]["source_id"] == "app:cmdb:1"
+        assert rels[0]["target_id"] == "team:team-ownership:1"
+        assert rels[0]["rel_type"] == "OWNED_BY"
+        assert rels[0]["source_system"] == "team-ownership"
