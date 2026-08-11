@@ -40,11 +40,19 @@ Set `$env:DOCKER_HOST` in every new shell before running Docker/Compose commands
 
 ```bash
 # From the repo root, with DOCKER_HOST set as above:
-docker-compose up -d neo4j     # starts Neo4j Community Edition (compose file lands with increment-3-graph-store)
+docker-compose up -d neo4j
 # Neo4j Browser: http://192.168.4.52:7474  |  Bolt: bolt://192.168.4.52:7687
+# Default local dev credentials: neo4j / edi-local-dev (override via NEO4J_PASSWORD)
+
+python -m src.graph.healthcheck    # verifies connectivity and bootstraps schema constraints
 ```
 
-If the remote host is unreachable, set `GRAPH_STORE_BACKEND=fallback` (see `ADR-0001-graph-store-selection.md`) to use the embedded NetworkX+SQLite store instead — no Docker required, reduced feature parity is acceptable for local iteration only.
+If the remote host is unreachable, set `GRAPH_STORE_BACKEND=fallback` (see `ADR-0001-graph-store-selection.md`) to use the embedded NetworkX+SQLite store instead — no Docker required, reduced feature parity is acceptable for local iteration only:
+
+```bash
+$env:GRAPH_STORE_BACKEND = "fallback"     # PowerShell; use export on bash/zsh
+python -m src.graph.healthcheck
+```
 
 ### Application
 

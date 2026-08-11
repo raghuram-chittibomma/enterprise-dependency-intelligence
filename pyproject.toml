@@ -1,6 +1,9 @@
 [tool.pytest.ini_options]
 pythonpath = ["."]
 testpaths = ["tests", "evals"]
+markers = [
+    "integration: requires a live external service (e.g. Neo4j) -- skips itself if unreachable",
+]
 
 [tool.ruff]
 line-length = 100
