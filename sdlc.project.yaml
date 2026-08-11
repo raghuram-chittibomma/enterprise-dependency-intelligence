@@ -1,0 +1,39 @@
+display_name: Enterprise Dependency Intelligence
+repo_root: .
+program: enterprise-dependency-intelligence
+
+docs:
+  architecture: docs/01_architecture/ARCHITECTURE.md
+  data_model: docs/01_architecture/DATA_MODEL.md
+  test_strategy: docs/02_testing/TEST_STRATEGY.md
+  product_brief: docs/00_project/PRODUCT_BRIEF.md
+  orchestrator_brief: docs/00_project/AI_ORCHESTRATOR_BRIEF.md
+  project_charter: docs/00_project/PROJECT_CHARTER.md
+  release_notes: docs/03_operations/RELEASE_NOTES.md
+  runbook: docs/03_operations/RUNBOOK.md
+  eval_strategy: docs/02_testing/EVAL_STRATEGY.md
+
+paths:
+  source: src/
+  tests: tests/
+  evals: evals/
+  project_skills: .skills/
+  sample_data: data/sample/
+  knowledge_base: data/knowledge_base/
+
+milestone:
+  current: "MVP1 - Knowledge Graph and Dependency Explorer (build)"
+
+extensions:
+  - graph_store
+  - source_parser
+  - entity_resolver
+  - answer_generator
+
+domain:
+  product_context: >-
+    Enterprise System Dependency Intelligence - a knowledge-graph-backed
+    application for enterprise dependency discovery, change-impact analysis,
+    incident blast-radius analysis, and (from MVP2 onward) Graph RAG and
+    agentic investigation, over a synthetic enterprise's applications, APIs,
+    services, databases, and business capabilities.
