@@ -36,6 +36,47 @@ class SearchResult:
     score: float
 
 
+@dataclass(frozen=True)
+class OwnerRef:
+    id: str
+    name: str
+
+
+# Fields common to every node (ontology's `NodeBase`, see DATA_MODEL.md) --
+# everything else on a node dict is a type-specific property (e.g.
+# `technology`/`environment` on Application, `engine` on Database) that
+# `get_entity_detail` surfaces generically via `EntityDetail.properties`
+# rather than a per-type dataclass, since FR2 must render all 9 node types.
+_COMMON_NODE_FIELDS = frozenset(
+    {
+        "id",
+        "label",
+        "name",
+        "description",
+        "lifecycle_status",
+        "criticality",
+        "source_system",
+        "source_record_id",
+        "ingested_at",
+    }
+)
+
+
+@dataclass(frozen=True)
+class EntityDetail:
+    id: str
+    label: str
+    name: str
+    description: str
+    lifecycle_status: str
+    criticality: str | None
+    owner: OwnerRef | None
+    properties: dict[str, object]
+    source_system: str
+    source_record_id: str
+    ingested_at: str
+
+
 def _per_word_alignment_score(query_words: list[str], name_words: list[str]) -> float:
     """The *worst*-matching query word's best available match among the
     name's words. Taking the min (not average/max) across query words means
@@ -105,3 +146,40 @@ def search_entities(store: GraphStore, query: str, limit: int = 20) -> list[Sear
         )
         for score, node in scored[:limit]
     ]
+
+
+def get_entity_detail(store: GraphStore, entity_id: str) -> EntityDetail | None:
+    """FR2: full metadata for a single entity, including its owning team
+    (a simple single-hop lookup -- the multi-entity ownership *rollup* over
+    a whole dependency subtree is FR9/increment-11, a separate function).
+    Returns `None` if `entity_id` doesn't match any node (the route turns
+    this into a 404).
+    """
+    nodes = store.get_all_nodes()
+    node = next((n for n in nodes if n["id"] == entity_id), None)
+    if node is None:
+        return None
+
+    owner = None
+    for rel in store.get_all_relationships():
+        if rel["rel_type"] == "OWNED_BY" and rel["source_id"] == entity_id:
+            owner_node = next((n for n in nodes if n["id"] == rel["target_id"]), None)
+            if owner_node is not None:
+                owner = OwnerRef(id=owner_node["id"], name=owner_node["name"])
+            break
+
+    properties = {k: v for k, v in node.items() if k not in _COMMON_NODE_FIELDS}
+
+    return EntityDetail(
+        id=node["id"],
+        label=node["label"],
+        name=node["name"],
+        description=node.get("description", ""),
+        lifecycle_status=node.get("lifecycle_status", "active"),
+        criticality=node.get("criticality"),
+        owner=owner,
+        properties=properties,
+        source_system=node["source_system"],
+        source_record_id=node["source_record_id"],
+        ingested_at=str(node.get("ingested_at", "")),
+    )

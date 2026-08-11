@@ -4,17 +4,19 @@
 <ul class="search-result-list">
   {% for r in results %}
   <li class="search-result-card">
-    <div class="search-result-heading">
-      <span class="entity-label">{{ r.label }}</span>
-      <span class="entity-name">{{ r.name }}</span>
-      {% if r.criticality %}
-      <span class="badge badge-criticality-{{ r.criticality }}">{{ r.criticality }}</span>
+    <a class="search-result-link" href="/entities/{{ r.id }}">
+      <div class="search-result-heading">
+        <span class="entity-label">{{ r.label }}</span>
+        <span class="entity-name">{{ r.name }}</span>
+        {% if r.criticality %}
+        <span class="badge badge-criticality-{{ r.criticality }}">{{ r.criticality }}</span>
+        {% endif %}
+        <span class="badge badge-lifecycle-{{ r.lifecycle_status }}">{{ r.lifecycle_status }}</span>
+      </div>
+      {% if r.description %}
+      <p class="entity-description">{{ r.description }}</p>
       {% endif %}
-      <span class="badge badge-lifecycle-{{ r.lifecycle_status }}">{{ r.lifecycle_status }}</span>
-    </div>
-    {% if r.description %}
-    <p class="entity-description">{{ r.description }}</p>
-    {% endif %}
+    </a>
   </li>
   {% endfor %}
 </ul>

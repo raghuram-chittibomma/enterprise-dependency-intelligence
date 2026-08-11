@@ -1,14 +1,15 @@
-"""Unit tests for FR1 (entity search) in `src/graph/queries.py`, against the
-fallback store seeded with a handful of hand-written nodes -- small,
-synthetic, scoped to the unit under test, per
+"""Unit tests for FR1 (entity search) and FR2 (entity detail) in
+`src/graph/queries.py`, against the fallback store seeded with a handful of
+hand-written nodes -- small, synthetic, scoped to the unit under test, per
 `docs/02_testing/TEST_STRATEGY.md`.
 """
 
 from __future__ import annotations
 
 from src.graph.fallback_store import FallbackGraphStore
-from src.graph.queries import search_entities
-from src.ontology.entities import API, Application, Database
+from src.graph.queries import get_entity_detail, search_entities
+from src.ontology.entities import API, Application, Database, Team
+from src.ontology.relationships import OwnedBy
 
 
 def _seed_store() -> FallbackGraphStore:
@@ -69,6 +70,27 @@ def _seed_store() -> FallbackGraphStore:
             technology="React",
             environment="prod",
         ),
+    )
+    store.upsert_node(
+        "Team",
+        Team(
+            id="team:team-ownership:1",
+            name="Commerce Platform Team",
+            source_system="team-ownership",
+            source_record_id="1",
+            business_area="Commerce",
+        ),
+    )
+    store.upsert_relationship(
+        "OWNED_BY",
+        OwnedBy(
+            source_id="app:cmdb:1",
+            target_id="team:team-ownership:1",
+            source_system="team-ownership",
+            source_record_id="1",
+        ),
+        "Application",
+        "Team",
     )
     return store
 
@@ -142,3 +164,52 @@ class TestSearchEntities:
         store = _seed_store()
         results = search_entities(store, "API Customer v1")
         assert results[0].id == "api:api-catalog:1"
+
+
+class TestGetEntityDetail:
+    def test_returns_none_for_unknown_id(self) -> None:
+        store = _seed_store()
+        assert get_entity_detail(store, "does-not-exist") is None
+
+    def test_returns_common_metadata_fields(self) -> None:
+        store = _seed_store()
+        detail = get_entity_detail(store, "app:cmdb:1")
+        assert detail is not None
+        assert detail.label == "Application"
+        assert detail.name == "Storefront"
+        assert detail.description == "Customer-facing e-commerce storefront."
+        assert detail.criticality == "critical"
+        assert detail.lifecycle_status == "active"
+
+    def test_returns_owner_when_owned_by_relationship_exists(self) -> None:
+        store = _seed_store()
+        detail = get_entity_detail(store, "app:cmdb:1")
+        assert detail is not None
+        assert detail.owner is not None
+        assert detail.owner.id == "team:team-ownership:1"
+        assert detail.owner.name == "Commerce Platform Team"
+
+    def test_owner_is_none_when_no_owned_by_relationship(self) -> None:
+        store = _seed_store()
+        detail = get_entity_detail(store, "app:cmdb:2")
+        assert detail is not None
+        assert detail.owner is None
+
+    def test_type_specific_properties_are_surfaced(self) -> None:
+        store = _seed_store()
+        detail = get_entity_detail(store, "app:cmdb:1")
+        assert detail is not None
+        assert detail.properties["technology"] == "React"
+        assert detail.properties["environment"] == "prod"
+        # Common fields (already promoted to top-level attributes) shouldn't
+        # be duplicated in the type-specific properties bag.
+        assert "name" not in detail.properties
+        assert "criticality" not in detail.properties
+
+    def test_provenance_fields_are_included(self) -> None:
+        store = _seed_store()
+        detail = get_entity_detail(store, "app:cmdb:1")
+        assert detail is not None
+        assert detail.source_system == "cmdb"
+        assert detail.source_record_id == "1"
+        assert detail.ingested_at

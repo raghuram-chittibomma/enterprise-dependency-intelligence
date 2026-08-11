@@ -94,10 +94,21 @@ body {
 }
 
 .search-result-card {
-  padding: 0.85rem 1rem;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius);
+  transition: background 0.1s ease;
+}
+
+.search-result-card:hover {
+  background: var(--color-surface-hover);
+}
+
+.search-result-link {
+  display: block;
+  padding: 0.85rem 1rem;
+  color: inherit;
+  text-decoration: none;
 }
 
 .search-result-heading {
@@ -174,4 +185,79 @@ body {
 .badge-lifecycle-planned {
   background: color-mix(in srgb, var(--color-planned) 20%, transparent);
   color: var(--color-planned);
+}
+
+.back-link {
+  display: inline-block;
+  margin-bottom: 1.25rem;
+  color: var(--color-text-muted);
+  text-decoration: none;
+  font-size: 0.9rem;
+}
+
+.back-link:hover {
+  color: var(--color-accent);
+}
+
+.entity-detail-heading {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.entity-detail-heading h1 {
+  font-size: 1.4rem;
+  font-weight: 700;
+  margin: 0;
+  color: var(--color-text);
+}
+
+.entity-detail .entity-description {
+  margin-top: 0.75rem;
+  font-size: 0.95rem;
+}
+
+.entity-metadata {
+  margin: 1.5rem 0 0;
+  padding: 0;
+  border-top: 1px solid var(--color-border);
+}
+
+.entity-metadata-row {
+  display: flex;
+  gap: 1rem;
+  padding: 0.6rem 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.entity-metadata-row dt {
+  flex: 0 0 160px;
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+}
+
+.entity-metadata-row dd {
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.entity-metadata-row a {
+  color: var(--color-accent);
+  text-decoration: none;
+}
+
+.entity-metadata-row a:hover {
+  text-decoration: underline;
+}
+
+.entity-metadata-empty {
+  color: var(--color-text-muted);
+  font-style: italic;
+}
+
+.entity-source {
+  margin-top: 1.25rem;
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
 }

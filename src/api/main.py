@@ -15,7 +15,7 @@ from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
-from src.api.routes import pages, search
+from src.api.routes import entities, pages, search
 from src.graph.config import get_graph_store
 
 WEB_DIR = Path(__file__).resolve().parent.parent / "web"
@@ -37,6 +37,7 @@ def create_app() -> FastAPI:
     app.mount("/static", StaticFiles(directory=str(WEB_DIR / "static")), name="static")
     app.include_router(pages.router)
     app.include_router(search.router)
+    app.include_router(entities.router)
     return app
 
 

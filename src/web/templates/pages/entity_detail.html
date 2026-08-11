@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+
+{% block title %}{{ entity.name }} &middot; Enterprise Dependency Intelligence{% endblock %}
+
+{% block content %}
+<a class="back-link" href="/">&larr; Back to search</a>
+
+<section class="entity-detail">
+  <div class="entity-detail-heading">
+    <span class="entity-label">{{ entity.label }}</span>
+    <h1>{{ entity.name }}</h1>
+    {% if entity.criticality %}
+    <span class="badge badge-criticality-{{ entity.criticality }}">{{ entity.criticality }}</span>
+    {% endif %}
+    <span class="badge badge-lifecycle-{{ entity.lifecycle_status }}">{{ entity.lifecycle_status }}</span>
+  </div>
+
+  {% if entity.description %}
+  <p class="entity-description">{{ entity.description }}</p>
+  {% endif %}
+
+  <dl class="entity-metadata">
+    <div class="entity-metadata-row">
+      <dt>Owner</dt>
+      <dd>
+        {% if entity.owner %}
+        <a href="/entities/{{ entity.owner.id }}">{{ entity.owner.name }}</a>
+        {% else %}
+        <span class="entity-metadata-empty">No owning team recorded</span>
+        {% endif %}
+      </dd>
+    </div>
+    {% for key, value in entity.properties.items() %}
+    {% if value %}
+    <div class="entity-metadata-row">
+      <dt>{{ key.replace('_', ' ') | title }}</dt>
+      <dd>
+        {% if value is sequence and value is not string %}
+        {{ value | join(", ") }}
+        {% else %}
+        {{ value }}
+        {% endif %}
+      </dd>
+    </div>
+    {% endif %}
+    {% endfor %}
+  </dl>
+
+  <p class="entity-source">Source: {{ entity.source_system }} (record {{ entity.source_record_id }})</p>
+</section>
+{% endblock %}
