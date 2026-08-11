@@ -2,6 +2,11 @@
 
 {% block title %}{{ entity.name }} &middot; Enterprise Dependency Intelligence{% endblock %}
 
+{% block head_extra %}
+<script src="https://unpkg.com/cytoscape@3.30.2/dist/cytoscape.min.js" defer></script>
+<script src="{{ url_for('static', path='js/graph.js') }}" defer></script>
+{% endblock %}
+
 {% block content %}
 <a class="back-link" href="/">&larr; Back to search</a>
 
@@ -85,5 +90,32 @@
   {% else %}
   <p class="entity-metadata-empty">Nothing depends directly on this entity.</p>
   {% endif %}
+</section>
+
+<section class="dependency-section graph-section" data-entity-id="{{ entity.id }}">
+  <h2>Dependency graph</h2>
+  <p class="graph-hint">
+    Traces {{ entity.name }}'s dependency chain up to a bounded number of hops.
+    "Depends on" traces upstream; "Depended on by" traces downstream.
+  </p>
+  <div class="graph-controls">
+    <label for="graph-direction">Direction</label>
+    <select id="graph-direction">
+      <option value="upstream">Depends on (upstream)</option>
+      <option value="downstream">Depended on by (downstream)</option>
+    </select>
+    <label for="graph-depth">Depth</label>
+    <select id="graph-depth">
+      <option value="1">1 hop</option>
+      <option value="2" selected>2 hops</option>
+      <option value="3">3 hops</option>
+      <option value="4">4 hops</option>
+      <option value="5">5 hops</option>
+    </select>
+  </div>
+  <div id="dependency-graph" class="dependency-graph-canvas"></div>
+  <p id="graph-empty-message" class="entity-metadata-empty" hidden>
+    No dependencies found in that direction.
+  </p>
 </section>
 {% endblock %}

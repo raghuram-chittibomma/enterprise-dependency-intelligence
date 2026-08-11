@@ -199,3 +199,61 @@ class TestDirectDependenciesOnDetailPage:
         assert response.status_code == 200
         assert "Nothing depends directly on this entity." not in response.text
         assert "No direct upstream dependencies." in response.text
+
+    def test_detail_page_includes_the_dependency_graph_section(
+        self, client: TestClient
+    ) -> None:
+        response = client.get("/entities/app:cmdb:1")
+        assert response.status_code == 200
+        assert 'data-entity-id="app:cmdb:1"' in response.text
+        assert 'id="dependency-graph"' in response.text
+        assert "cytoscape" in response.text
+
+
+class TestDependencyGraphRoute:
+    def test_unknown_entity_id_returns_404(self, client: TestClient) -> None:
+        response = client.get("/entities/does-not-exist/graph")
+        assert response.status_code == 404
+
+    def test_default_upstream_traversal_reaches_the_two_hop_chain(
+        self, client: TestClient
+    ) -> None:
+        response = client.get("/entities/app:cmdb:1/graph")
+        assert response.status_code == 200
+        body = response.json()
+        assert body["root_id"] == "app:cmdb:1"
+        assert body["direction"] == "upstream"
+        assert {n["id"] for n in body["nodes"]} == {
+            "app:cmdb:1",
+            "api:api-catalog:1",
+            "db:db-metadata:1",
+        }
+        assert {(e["source_id"], e["target_id"]) for e in body["edges"]} == {
+            ("app:cmdb:1", "api:api-catalog:1"),
+            ("api:api-catalog:1", "db:db-metadata:1"),
+        }
+
+    def test_depth_1_stops_at_the_direct_neighbor(self, client: TestClient) -> None:
+        response = client.get("/entities/app:cmdb:1/graph", params={"depth": 1})
+        assert response.status_code == 200
+        body = response.json()
+        assert {n["id"] for n in body["nodes"]} == {"app:cmdb:1", "api:api-catalog:1"}
+
+    def test_downstream_direction_traces_dependents(self, client: TestClient) -> None:
+        response = client.get(
+            "/entities/db:db-metadata:1/graph", params={"direction": "downstream"}
+        )
+        assert response.status_code == 200
+        body = response.json()
+        assert body["direction"] == "downstream"
+        assert {n["id"] for n in body["nodes"]} == {
+            "db:db-metadata:1",
+            "api:api-catalog:1",
+            "app:cmdb:1",
+        }
+
+    def test_invalid_direction_is_rejected(self, client: TestClient) -> None:
+        response = client.get(
+            "/entities/app:cmdb:1/graph", params={"direction": "sideways"}
+        )
+        assert response.status_code == 422

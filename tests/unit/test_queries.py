@@ -7,8 +7,13 @@ unit under test, per `docs/02_testing/TEST_STRATEGY.md`.
 from __future__ import annotations
 
 from src.graph.fallback_store import FallbackGraphStore
-from src.graph.queries import get_direct_dependencies, get_entity_detail, search_entities
-from src.ontology.entities import API, Application, Database, Team
+from src.graph.queries import (
+    get_dependency_traversal,
+    get_direct_dependencies,
+    get_entity_detail,
+    search_entities,
+)
+from src.ontology.entities import API, Application, Database, Service, Team
 from src.ontology.relationships import Consumes, OwnedBy, ReadsFrom
 
 
@@ -289,3 +294,128 @@ class TestGetDirectDependencies:
         assert deps is not None
         assert deps.upstream == []
         assert deps.downstream == []
+
+
+class TestGetDependencyTraversal:
+    """`_seed_store`'s chain: Storefront -CONSUMES-> Customer API v1
+    -READS_FROM-> OrdersDB.
+    """
+
+    def test_returns_none_for_unknown_id(self) -> None:
+        store = _seed_store()
+        assert get_dependency_traversal(store, "does-not-exist", "upstream") is None
+
+    def test_rejects_an_invalid_direction(self) -> None:
+        store = _seed_store()
+        try:
+            get_dependency_traversal(store, "app:cmdb:1", "sideways")
+        except ValueError as exc:
+            assert "direction" in str(exc)
+        else:
+            raise AssertionError("expected ValueError for an invalid direction")
+
+    def test_depth_1_reaches_only_the_direct_neighbor(self) -> None:
+        store = _seed_store()
+        result = get_dependency_traversal(store, "app:cmdb:1", "upstream", max_depth=1)
+        assert result is not None
+        assert {n.entity.id: n.depth for n in result.nodes} == {
+            "app:cmdb:1": 0,
+            "api:api-catalog:1": 1,
+        }
+        assert len(result.edges) == 1
+        assert result.edges[0].rel_type == "CONSUMES"
+
+    def test_depth_2_reaches_the_second_hop(self) -> None:
+        store = _seed_store()
+        result = get_dependency_traversal(store, "app:cmdb:1", "upstream", max_depth=2)
+        assert result is not None
+        depths = {n.entity.id: n.depth for n in result.nodes}
+        assert depths == {"app:cmdb:1": 0, "api:api-catalog:1": 1, "db:db-metadata:1": 2}
+        assert {(e.source_id, e.target_id, e.rel_type) for e in result.edges} == {
+            ("app:cmdb:1", "api:api-catalog:1", "CONSUMES"),
+            ("api:api-catalog:1", "db:db-metadata:1", "READS_FROM"),
+        }
+
+    def test_downstream_is_the_mirror_of_upstream(self) -> None:
+        store = _seed_store()
+        result = get_dependency_traversal(store, "db:db-metadata:1", "downstream", max_depth=2)
+        assert result is not None
+        depths = {n.entity.id: n.depth for n in result.nodes}
+        assert depths == {"db:db-metadata:1": 0, "api:api-catalog:1": 1, "app:cmdb:1": 2}
+
+    def test_requested_depth_beyond_available_hops_does_not_error(self) -> None:
+        store = _seed_store()
+        result = get_dependency_traversal(store, "app:cmdb:1", "upstream", max_depth=5)
+        assert result is not None
+        assert len(result.nodes) == 3  # stops once the frontier is empty, no phantom hops
+
+    def test_depth_is_clamped_to_the_configured_maximum(self) -> None:
+        from src.graph.queries import MAX_TRAVERSAL_DEPTH
+
+        store = _seed_store()
+        result = get_dependency_traversal(store, "app:cmdb:1", "upstream", max_depth=999)
+        assert result is not None
+        assert result.max_depth == MAX_TRAVERSAL_DEPTH
+
+    def test_depth_is_clamped_to_at_least_one(self) -> None:
+        store = _seed_store()
+        result = get_dependency_traversal(store, "app:cmdb:1", "upstream", max_depth=0)
+        assert result is not None
+        assert result.max_depth == 1
+
+    def test_a_cycle_does_not_hang_and_its_edges_are_still_reported(self) -> None:
+        store = FallbackGraphStore()
+        store.upsert_node(
+            "Service",
+            Service(
+                id="svc:cmdb:1",
+                name="Service A",
+                source_system="cmdb",
+                source_record_id="1",
+                technology="Java",
+                environment="prod",
+            ),
+        )
+        store.upsert_node(
+            "Service",
+            Service(
+                id="svc:cmdb:2",
+                name="Service B",
+                source_system="cmdb",
+                source_record_id="2",
+                technology="Java",
+                environment="prod",
+            ),
+        )
+        store.upsert_relationship(
+            "CONSUMES",
+            Consumes(
+                source_id="svc:cmdb:1",
+                target_id="svc:cmdb:2",
+                source_system="cmdb",
+                source_record_id="1",
+            ),
+            "Service",
+            "Service",
+        )
+        store.upsert_relationship(
+            "CONSUMES",
+            Consumes(
+                source_id="svc:cmdb:2",
+                target_id="svc:cmdb:1",
+                source_system="cmdb",
+                source_record_id="2",
+            ),
+            "Service",
+            "Service",
+        )
+
+        result = get_dependency_traversal(store, "svc:cmdb:1", "upstream", max_depth=5)
+        assert result is not None
+        # Only 2 nodes -- the cycle back to an already-visited node adds no
+        # new node, but its edge is still surfaced for the subgraph (FR5).
+        assert {n.entity.id for n in result.nodes} == {"svc:cmdb:1", "svc:cmdb:2"}
+        assert {(e.source_id, e.target_id) for e in result.edges} == {
+            ("svc:cmdb:1", "svc:cmdb:2"),
+            ("svc:cmdb:2", "svc:cmdb:1"),
+        }

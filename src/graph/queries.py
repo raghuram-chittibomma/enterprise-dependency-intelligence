@@ -9,10 +9,13 @@ both the structured routes and the NL query layer (`src/nlquery/`, per
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Literal
 
 from rapidfuzz import fuzz
 
 from src.graph.store import GraphStore
+
+TraversalDirection = Literal["upstream", "downstream"]
 
 # Below this score (0-100), a name is considered an unrelated result rather
 # than a plausible typo/reordering -- deliberately looser than ADR-0002's
@@ -257,3 +260,103 @@ def get_direct_dependencies(store: GraphStore, entity_id: str) -> DirectDependen
     upstream.sort(key=lambda edge: (edge.rel_type, edge.entity.name))
     downstream.sort(key=lambda edge: (edge.rel_type, edge.entity.name))
     return DirectDependencies(upstream=upstream, downstream=downstream)
+
+
+# FR4 is explicitly a *bounded* traversal (see PROJECT_CHARTER.md's
+# constraints) -- a UI-facing depth control that could crawl the whole
+# graph would defeat the point of "configurable depth" as a scoping tool.
+DEFAULT_TRAVERSAL_DEPTH = 2
+MAX_TRAVERSAL_DEPTH = 5
+
+
+@dataclass(frozen=True)
+class TraversalNode:
+    entity: EntityRef
+    depth: int  # 0 = the root entity itself
+
+
+@dataclass(frozen=True)
+class TraversalEdge:
+    source_id: str
+    target_id: str
+    rel_type: str
+
+
+@dataclass(frozen=True)
+class TraversalResult:
+    root_id: str
+    direction: TraversalDirection
+    max_depth: int
+    nodes: list[TraversalNode]
+    edges: list[TraversalEdge]
+
+
+def get_dependency_traversal(
+    store: GraphStore,
+    entity_id: str,
+    direction: TraversalDirection,
+    max_depth: int = DEFAULT_TRAVERSAL_DEPTH,
+) -> TraversalResult | None:
+    """FR4/FR5: BFS out from `entity_id` through dependency edges only
+    (same `DEPENDENCY_REL_TYPES` restriction as FR3), up to `max_depth`
+    hops in the given direction, returning every reached node (with its
+    depth) plus *every* dependency edge between two reached nodes -- not
+    just the BFS tree edges -- so a rendered subgraph (FR5) shows real
+    cross-links between sibling nodes, not an artificially tree-shaped view.
+    Returns `None` if `entity_id` doesn't match any node.
+    """
+    if direction not in ("upstream", "downstream"):
+        raise ValueError(f"direction must be 'upstream' or 'downstream', got {direction!r}")
+
+    nodes = store.get_all_nodes()
+    node_by_id = {n["id"]: n for n in nodes}
+    if entity_id not in node_by_id:
+        return None
+    max_depth = max(1, min(max_depth, MAX_TRAVERSAL_DEPTH))
+
+    dependency_rels = [
+        rel for rel in store.get_all_relationships() if rel["rel_type"] in DEPENDENCY_REL_TYPES
+    ]
+    adjacency: dict[str, list[str]] = {}
+    for rel in dependency_rels:
+        step_from, step_to = (
+            (rel["source_id"], rel["target_id"])
+            if direction == "upstream"
+            else (rel["target_id"], rel["source_id"])
+        )
+        adjacency.setdefault(step_from, []).append(step_to)
+
+    depth_by_id: dict[str, int] = {entity_id: 0}
+    frontier = [entity_id]
+    for depth in range(1, max_depth + 1):
+        next_frontier = []
+        for current_id in frontier:
+            for neighbor_id in adjacency.get(current_id, []):
+                if neighbor_id in depth_by_id or neighbor_id not in node_by_id:
+                    continue
+                depth_by_id[neighbor_id] = depth
+                next_frontier.append(neighbor_id)
+        frontier = next_frontier
+        if not frontier:
+            break
+
+    traversal_nodes = [
+        TraversalNode(entity=_entity_ref(node_by_id[node_id]), depth=node_depth)
+        for node_id, node_depth in sorted(
+            depth_by_id.items(), key=lambda item: (item[1], node_by_id[item[0]]["name"])
+        )
+    ]
+    traversal_edges = [
+        TraversalEdge(
+            source_id=rel["source_id"], target_id=rel["target_id"], rel_type=rel["rel_type"]
+        )
+        for rel in dependency_rels
+        if rel["source_id"] in depth_by_id and rel["target_id"] in depth_by_id
+    ]
+    return TraversalResult(
+        root_id=entity_id,
+        direction=direction,
+        max_depth=max_depth,
+        nodes=traversal_nodes,
+        edges=traversal_edges,
+    )
