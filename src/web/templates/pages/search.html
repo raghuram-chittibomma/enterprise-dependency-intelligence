@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block title %}Search &middot; Enterprise Dependency Intelligence{% endblock %}
+
+{% block content %}
+<section class="search-page">
+  <h1>Find any system, service, API, database, pipeline, report, or team</h1>
+  <input
+    type="search"
+    name="q"
+    class="search-input"
+    placeholder="Search by name, e.g. &quot;Storefront&quot; or &quot;Orders API&quot;&hellip;"
+    hx-get="/search"
+    hx-trigger="input changed delay:200ms, search"
+    hx-target="#search-results"
+    hx-swap="innerHTML"
+    autofocus
+  />
+  <div id="search-results" class="search-results"></div>
+</section>
+{% endblock %}

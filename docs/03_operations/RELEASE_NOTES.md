@@ -17,6 +17,7 @@ Newest entry first. One entry per release/milestone.
 - Graph store (`src/graph/`): `GraphStore` protocol with Neo4j (primary, via Docker) and NetworkX+SQLite (fallback) implementations, plus a CLI health check (`src/graph/healthcheck.py`).
 - Ingestion pipeline (`src/ingestion/`): two-phase (nodes, then relationships) ingestion across all 5 sources, with natural-key ID generation, deterministic entity resolution (exact → normalized → fuzzy), and an unresolved-reference queue. CLI at `src/ingestion/run.py`.
 - Data quality checks (`src/quality/`): automated graph invariants (no duplicate natural keys, no duplicate names per label, referential consistency, no orphan nodes, required provenance fields) as both a pure-function library and a CLI (`src/quality/run.py`) that exits non-zero on error-severity issues. The freshly ingested golden dataset (45 nodes, 101 relationships) passes with zero issues.
+- **FR1 entity search**, and with it the first usable slice of the app: a FastAPI + Jinja2 + HTMX web UI (`src/api/`, `src/web/`) at `/`, backed by a word-alignment-aware fuzzy search (`src/graph/queries.py::search_entities`) tuned against the real dataset to tolerate typos and word reordering without false-positiving on unrelated multi-word names.
 
 ### Changed
 

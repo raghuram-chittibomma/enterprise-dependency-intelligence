@@ -41,7 +41,11 @@ class FallbackGraphStore:
     def __init__(self, sqlite_path: str | Path = ":memory:") -> None:
         if sqlite_path != ":memory:":
             Path(sqlite_path).parent.mkdir(parents=True, exist_ok=True)
-        self._conn = sqlite3.connect(str(sqlite_path))
+        # check_same_thread=False: the API layer shares one store instance
+        # across request-handling threads (ASGI thread portals/threadpools);
+        # MVP1 is single-user/local-first, so no extra locking is added on
+        # top of sqlite3's own thread-safe-connection guarantees.
+        self._conn = sqlite3.connect(str(sqlite_path), check_same_thread=False)
         self._conn.executescript(_SCHEMA)
         self._conn.commit()
         self.graph: nx.MultiDiGraph = nx.MultiDiGraph()

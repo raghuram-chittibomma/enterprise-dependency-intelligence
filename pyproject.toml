@@ -11,3 +11,6 @@ target-version = "py311"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B"]
+# B008: FastAPI's `Depends(...)`/`Query(...)` default-argument pattern is
+# idiomatic, not the mutable-default-argument bug this rule targets.
+ignore = ["B008"]

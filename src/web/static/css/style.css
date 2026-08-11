@@ -1,0 +1,177 @@
+:root {
+  --color-bg: #0f1420;
+  --color-surface: #171d2c;
+  --color-surface-hover: #1e2638;
+  --color-border: #2a3142;
+  --color-text: #e6e9f0;
+  --color-text-muted: #9aa4b8;
+  --color-accent: #5b8def;
+  --color-critical: #e5484d;
+  --color-high: #f5a623;
+  --color-medium: #e8c547;
+  --color-low: #4ade80;
+  --color-active: #4ade80;
+  --color-deprecated: #f5a623;
+  --color-retired: #6b7280;
+  --color-planned: #5b8def;
+  --radius: 10px;
+  font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+.app-header {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.app-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--color-text);
+  text-decoration: none;
+}
+
+.app-subtitle {
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+}
+
+.app-main {
+  max-width: 780px;
+  margin: 0 auto;
+  padding: 2.5rem 1.5rem;
+}
+
+.search-page h1 {
+  font-size: 1.35rem;
+  font-weight: 600;
+  margin-bottom: 1.25rem;
+  color: var(--color-text);
+}
+
+.search-input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  font-size: 1rem;
+  color: var(--color-text);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  outline: none;
+}
+
+.search-input:focus {
+  border-color: var(--color-accent);
+}
+
+.search-results {
+  margin-top: 1.25rem;
+}
+
+.search-empty {
+  color: var(--color-text-muted);
+}
+
+.search-result-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.search-result-card {
+  padding: 0.85rem 1rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+}
+
+.search-result-heading {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.entity-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.entity-name {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.entity-description {
+  margin: 0.4rem 0 0;
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+}
+
+.badge {
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  text-transform: capitalize;
+  margin-left: auto;
+}
+
+.badge-criticality-critical {
+  background: color-mix(in srgb, var(--color-critical) 25%, transparent);
+  color: var(--color-critical);
+}
+
+.badge-criticality-high {
+  background: color-mix(in srgb, var(--color-high) 25%, transparent);
+  color: var(--color-high);
+}
+
+.badge-criticality-medium {
+  background: color-mix(in srgb, var(--color-medium) 25%, transparent);
+  color: var(--color-medium);
+}
+
+.badge-criticality-low {
+  background: color-mix(in srgb, var(--color-low) 25%, transparent);
+  color: var(--color-low);
+}
+
+.badge-lifecycle-active {
+  background: color-mix(in srgb, var(--color-active) 20%, transparent);
+  color: var(--color-active);
+}
+
+.badge-lifecycle-deprecated {
+  background: color-mix(in srgb, var(--color-deprecated) 20%, transparent);
+  color: var(--color-deprecated);
+}
+
+.badge-lifecycle-retired {
+  background: color-mix(in srgb, var(--color-retired) 30%, transparent);
+  color: var(--color-text-muted);
+}
+
+.badge-lifecycle-planned {
+  background: color-mix(in srgb, var(--color-planned) 20%, transparent);
+  color: var(--color-planned);
+}
