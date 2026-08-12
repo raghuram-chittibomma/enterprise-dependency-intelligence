@@ -1,0 +1,208 @@
+"""Golden-dataset scenarios for MVP1 (see `docs/02_testing/EVAL_STRATEGY.md`).
+
+Each scenario is a deterministic exact-match assertion against the fully
+ingested Meridian Retail Group graph. A failure is a bug in ingestion,
+entity resolution, a query template, or the NL layer -- not a quality
+score to triage on a spectrum.
+"""
+
+from __future__ import annotations
+
+# The 7 PRODUCT_BRIEF.md golden questions, plus representative FR1-FR10 /
+# FR12 / FR13 behaviors. Entity expectations use stable natural-key ids
+# from the synthetic dataset (`data/sample/`).
+SCENARIOS: list[dict] = [
+    # --- FR11 golden questions -------------------------------------------------
+    {
+        "id": "gq1-consumers-of-customer-api",
+        "fr": "FR11",
+        "question": "What applications/services directly consume Customer API v1?",
+        "expected_status": "answered",
+        "expected_question_type": "consumers_of",
+        "expected_entities": ["api:api-catalog:api-001"],
+        "expected_entity_names": ["Customer Portal", "Order Service", "Storefront"],
+        "expected_relationship_types": ["CONSUMES"],
+    },
+    {
+        "id": "gq2-order-service-depends-on",
+        "fr": "FR11",
+        "question": "What does Order Service depend on?",
+        "expected_status": "answered",
+        "expected_question_type": "depends_on",
+        "expected_entities": ["svc:cmdb:svc-001"],
+        "expected_entity_names": ["Customer API v1", "Order Database"],
+        "expected_relationship_types": ["CONSUMES", "READS_FROM", "WRITES_TO"],
+    },
+    {
+        "id": "gq3-owners-downstream-customer-api",
+        "fr": "FR11",
+        "question": "Who owns applications downstream from Customer API v1?",
+        "expected_status": "answered",
+        "expected_question_type": "owners_downstream",
+        "expected_entities": ["api:api-catalog:api-001"],
+        "expected_entity_names": [
+            "Commerce Platform Team",
+            "Customer Experience Team",
+            "Storefront",
+            "Customer Portal",
+        ],
+        "expected_relationship_types": ["OWNED_BY"],
+    },
+    {
+        "id": "gq4-capabilities-of-order-database",
+        "fr": "FR11",
+        "question": "Which business capabilities depend on Order Database?",
+        "expected_status": "answered",
+        "expected_question_type": "capabilities_of",
+        "expected_entities": ["db:db-metadata:db-002"],
+        "expected_entity_names": ["Order Management"],
+        "expected_relationship_types": ["SUPPORTS"],
+    },
+    {
+        "id": "gq5-path-storefront-customer-database",
+        "fr": "FR11",
+        "question": "What is the dependency path between Storefront and Customer Database?",
+        "expected_status": "answered",
+        "expected_question_type": "path_between",
+        "expected_entities": ["app:cmdb:app-001", "db:db-metadata:db-001"],
+        "expected_path": [
+            "Storefront",
+            "Customer API v1",
+            "Customer Service",
+            "Customer Database",
+        ],
+        "expected_relationship_types": ["CONSUMES", "READS_FROM"],
+    },
+    {
+        "id": "gq6-apis-consumed-by-order-management",
+        "fr": "FR11",
+        "question": "Which APIs are consumed by Order Management?",
+        "expected_status": "answered",
+        "expected_question_type": "consumed_by",
+        "expected_entities": ["app:cmdb:app-002"],
+        "expected_entity_names": [
+            "Inventory API v1",
+            "Order API v1",
+            "Payment API v1",
+            "Product API v1",
+            "Shipping API v1",
+        ],
+        "expected_relationship_types": ["CONSUMES"],
+    },
+    {
+        "id": "gq7-applications-use-customer-database",
+        "fr": "FR11",
+        "question": "What applications use Customer Database?",
+        "expected_status": "answered",
+        "expected_question_type": "used_by",
+        "expected_entities": ["db:db-metadata:db-001"],
+        "expected_entity_names": ["Admin Console", "Marketing Automation Hub"],
+        "expected_relationship_types": ["READS_FROM"],
+    },
+    # --- FR13 non-answers ------------------------------------------------------
+    {
+        "id": "fr13-unsupported-why",
+        "fr": "FR13",
+        "question": "Why does Storefront call Customer API v1?",
+        "expected_status": "unsupported",
+        "expected_entities": [],
+        "expected_relationship_types": [],
+    },
+    {
+        "id": "fr13-entity-not-found",
+        "fr": "FR13",
+        "question": "What does Totally Fake System depend on?",
+        "expected_status": "not_found",
+        "expected_entities": [],
+        "expected_relationship_types": [],
+    },
+    # --- Structured FR coverage ------------------------------------------------
+    {
+        "id": "fr1-search-storefront",
+        "fr": "FR1",
+        "kind": "search",
+        "query": "Storefront",
+        "expected_top_id": "app:cmdb:app-001",
+        "expected_top_name": "Storefront",
+    },
+    {
+        "id": "fr2-detail-storefront",
+        "fr": "FR2",
+        "kind": "detail",
+        "entity_id": "app:cmdb:app-001",
+        "expected_name": "Storefront",
+        "expected_owner_name": "Commerce Platform Team",
+        "expected_source_system": "cmdb",
+    },
+    {
+        "id": "fr3-direct-deps-order-service",
+        "fr": "FR3",
+        "kind": "direct_deps",
+        "entity_id": "svc:cmdb:svc-001",
+        "expected_upstream_names": ["Customer API v1", "Order Database"],
+        "expected_upstream_rel_types": ["CONSUMES", "READS_FROM", "WRITES_TO"],
+        "expected_downstream_names": ["Order API v1"],
+    },
+    {
+        "id": "fr4-downstream-traversal-customer-api",
+        "fr": "FR4",
+        "kind": "traversal",
+        "entity_id": "api:api-catalog:api-001",
+        "direction": "downstream",
+        "max_depth": 1,
+        "expected_node_names": [
+            "Customer API v1",
+            "Customer Portal",
+            "Order Service",
+            "Storefront",
+        ],
+    },
+    {
+        "id": "fr6-shortest-path-storefront-customer-db",
+        "fr": "FR6",
+        "kind": "path",
+        "source_id": "app:cmdb:app-001",
+        "target_id": "db:db-metadata:db-001",
+        "expected_path": [
+            "Storefront",
+            "Customer API v1",
+            "Customer Service",
+            "Customer Database",
+        ],
+        "expected_rel_types": ["CONSUMES", "CONSUMES", "READS_FROM"],
+        "expected_min_alternates": 1,
+    },
+    {
+        "id": "fr8-owning-team-storefront",
+        "fr": "FR8",
+        "kind": "owning_team",
+        "entity_id": "app:cmdb:app-001",
+        "expected_owner_name": "Commerce Platform Team",
+    },
+    {
+        "id": "fr9-ownership-rollup-customer-api",
+        "fr": "FR9",
+        "kind": "ownership_rollup",
+        "entity_id": "api:api-catalog:api-001",
+        "direction": "downstream",
+        "expected_team_names": ["Commerce Platform Team", "Customer Experience Team"],
+    },
+    {
+        "id": "fr10-capability-rollup-order-database",
+        "fr": "FR10",
+        "kind": "capability_rollup",
+        "entity_id": "db:db-metadata:db-002",
+        "direction": "downstream",
+        "expected_capability_names": ["Order Management"],
+    },
+    {
+        "id": "fr12-evidence-storefront",
+        "fr": "FR12",
+        "kind": "evidence",
+        "entity_id": "app:cmdb:app-001",
+        "expected_rel_types": ["CONSUMES", "OWNED_BY", "SUPPORTS"],
+        "expected_min_items": 3,
+        "expected_evidence_type": "documented",
+        "expected_source_systems": ["api-catalog", "cmdb", "team-ownership"],
+    },
+]

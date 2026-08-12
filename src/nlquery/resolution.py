@@ -38,13 +38,25 @@ class ResolutionResult:
     ambiguous: bool
 
 
-def resolve_entity(store: GraphStore, name: str) -> ResolutionResult:
+def resolve_entity(
+    store: GraphStore,
+    name: str,
+    *,
+    allowed_labels: frozenset[str] | None = None,
+) -> ResolutionResult:
     """Resolves `name` to a single graph node, or reports that it couldn't
     be confidently resolved. Never returns a best-effort guess (FR13):
     `entity=None` always means "ask the user to be more specific," whether
     because nothing matched or because too much did.
+
+    `allowed_labels`, when set, restricts candidates to those node labels --
+    used by question types whose entity slot can only sensibly be certain
+    kinds of node (e.g. "APIs consumed by X" only makes sense when X can
+    itself CONSUMES, so Team/BusinessCapability/Database are out of scope).
     """
-    candidates = search_entities(store, name, limit=5)
+    candidates = search_entities(store, name, limit=10)
+    if allowed_labels is not None:
+        candidates = [c for c in candidates if c.label in allowed_labels]
     if not candidates or candidates[0].score < RESOLUTION_SCORE_THRESHOLD:
         return ResolutionResult(entity=None, ambiguous=False)
 

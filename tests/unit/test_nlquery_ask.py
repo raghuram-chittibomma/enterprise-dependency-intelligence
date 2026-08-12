@@ -328,6 +328,16 @@ class TestResolveEntity:
         assert result.entity is None
         assert result.ambiguous
 
+    def test_allowed_labels_disambiguate_same_name_types(self) -> None:
+        store = _seed_nl_scenario()
+        # Seed has no name collision, but the filter still must prefer only
+        # allowed labels when provided.
+        result = resolve_entity(
+            store, "Order Management", allowed_labels=frozenset({"Application", "Service", "API"})
+        )
+        assert result.entity is not None
+        assert result.entity.label == "Application"
+
 
 class TestAskGoldenQuestions:
     def test_consumers_of(self) -> None:

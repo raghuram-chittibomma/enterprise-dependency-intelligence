@@ -42,6 +42,22 @@ _ENTITY_KEYS: dict[QuestionType, tuple[str, ...]] = {
     "used_by": ("entity",),
 }
 
+# Optional label filters for entity slots whose question shape only makes
+# sense for certain node types. Without this, an exact-name collision
+# between e.g. Application "Order Management" and BusinessCapability
+# "Order Management" makes golden question 6 permanently FR13-ambiguous.
+_ALLOWED_LABELS: dict[QuestionType, dict[str, frozenset[str]]] = {
+    "consumed_by": {
+        "entity": frozenset({"Application", "Service", "API"}),
+    },
+    "consumers_of": {
+        "entity": frozenset({"API", "Service", "Application", "Database", "DataPipeline"}),
+    },
+    "used_by": {
+        "entity": frozenset({"Database", "API", "Service", "DataPipeline", "ExternalSystem"}),
+    },
+}
+
 
 @dataclass(frozen=True)
 class RetrievalResult:
@@ -73,9 +89,10 @@ def _resolve_entities(
     resolving `target` if `source` already failed).
     """
     resolved: dict[str, EntityRef] = {}
+    label_filters = _ALLOWED_LABELS.get(intent.question_type, {})
     for key in _ENTITY_KEYS[intent.question_type]:
         raw_name = intent.entities[key]
-        result = resolve_entity(store, raw_name)
+        result = resolve_entity(store, raw_name, allowed_labels=label_filters.get(key))
         if result.entity is None:
             return resolved, raw_name, result.ambiguous
         resolved[key] = result.entity
