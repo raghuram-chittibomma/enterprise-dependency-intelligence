@@ -9,16 +9,18 @@ from __future__ import annotations
 from src.graph.fallback_store import FallbackGraphStore
 from src.graph.queries import (
     MAX_ALTERNATE_PATHS,
+    get_capability_rollup,
     get_dependency_paths,
     get_dependency_traversal,
+    get_direct_capabilities,
     get_direct_dependencies,
     get_entity_detail,
     get_ownership_rollup,
     get_owning_team,
     search_entities,
 )
-from src.ontology.entities import API, Application, Database, Service, Team
-from src.ontology.relationships import Consumes, OwnedBy, ReadsFrom
+from src.ontology.entities import API, Application, BusinessCapability, Database, Service, Team
+from src.ontology.relationships import Consumes, OwnedBy, ReadsFrom, Supports, WritesTo
 
 
 def _seed_store() -> FallbackGraphStore:
@@ -790,3 +792,159 @@ class TestGetOwnershipRollup:
         assert rollup is not None
         team_names = [g.team.name if g.team else None for g in rollup.groups]
         assert team_names == ["Team A", "Team B", None]
+
+
+def _seed_capability_scenario() -> FallbackGraphStore:
+    """App1 -CONSUMES-> OrderAPI -WRITES_TO-> OrderDB; App1 -SUPPORTS->
+    Customer Management directly, OrderAPI -SUPPORTS-> Order Management --
+    the "which capabilities depend on OrderDB" shape (golden question 4).
+    """
+    store = FallbackGraphStore()
+    store.upsert_node(
+        "BusinessCapability",
+        BusinessCapability(
+            id="cap:order",
+            name="Order Management",
+            source_system="api-catalog",
+            source_record_id="1",
+            capability_area="Commerce",
+        ),
+    )
+    store.upsert_node(
+        "BusinessCapability",
+        BusinessCapability(
+            id="cap:customer",
+            name="Customer Management",
+            source_system="cmdb",
+            source_record_id="1",
+            capability_area="Commerce",
+        ),
+    )
+    store.upsert_node(
+        "Application",
+        Application(
+            id="app:1",
+            name="App1",
+            source_system="cmdb",
+            source_record_id="1",
+            technology="Java",
+            environment="prod",
+        ),
+    )
+    store.upsert_relationship(
+        "SUPPORTS",
+        Supports(
+            source_id="app:1", target_id="cap:customer", source_system="cmdb", source_record_id="1"
+        ),
+        "Application",
+        "BusinessCapability",
+    )
+    store.upsert_node(
+        "API",
+        API(
+            id="api:order",
+            name="OrderAPI",
+            source_system="api-catalog",
+            source_record_id="1",
+            version="v1",
+            protocol="REST",
+        ),
+    )
+    store.upsert_relationship(
+        "SUPPORTS",
+        Supports(
+            source_id="api:order",
+            target_id="cap:order",
+            source_system="api-catalog",
+            source_record_id="2",
+        ),
+        "API",
+        "BusinessCapability",
+    )
+    store.upsert_relationship(
+        "CONSUMES",
+        Consumes(
+            source_id="app:1",
+            target_id="api:order",
+            source_system="api-catalog",
+            source_record_id="3",
+        ),
+        "Application",
+        "API",
+    )
+    store.upsert_node(
+        "Database",
+        Database(
+            id="db:order",
+            name="OrderDB",
+            source_system="db-metadata",
+            source_record_id="1",
+            engine="PostgreSQL",
+        ),
+    )
+    store.upsert_relationship(
+        "WRITES_TO",
+        WritesTo(
+            source_id="api:order",
+            target_id="db:order",
+            source_system="db-metadata",
+            source_record_id="1",
+        ),
+        "API",
+        "Database",
+    )
+    return store
+
+
+class TestGetDirectCapabilities:
+    def test_returns_none_for_unknown_id(self) -> None:
+        store = _seed_capability_scenario()
+        assert get_direct_capabilities(store, "does-not-exist") is None
+
+    def test_returns_capabilities_directly_supported_by_the_entity(self) -> None:
+        store = _seed_capability_scenario()
+        capabilities = get_direct_capabilities(store, "app:1")
+        assert capabilities is not None
+        assert [c.id for c in capabilities] == ["cap:customer"]
+
+    def test_entity_type_that_cannot_support_a_capability_returns_empty_list(self) -> None:
+        # Database is never a SUPPORTS source per DATA_MODEL.md.
+        store = _seed_capability_scenario()
+        assert get_direct_capabilities(store, "db:order") == []
+
+
+class TestGetCapabilityRollup:
+    def test_returns_none_for_unknown_id(self) -> None:
+        store = _seed_capability_scenario()
+        assert get_capability_rollup(store, "does-not-exist", "downstream") is None
+
+    def test_rolls_up_capabilities_supported_by_dependents(self) -> None:
+        # OrderDB itself can't SUPPORTS anything, but golden question 4
+        # ("which capabilities depend on Order Database") is answered by
+        # rolling up what its dependents (OrderAPI, then App1) support.
+        store = _seed_capability_scenario()
+        rollup = get_capability_rollup(store, "db:order", "downstream", max_depth=2)
+        assert rollup is not None
+        capability_ids = {g.capability.id for g in rollup.groups}
+        assert capability_ids == {"cap:order", "cap:customer"}
+
+    def test_groups_list_which_entities_support_each_capability(self) -> None:
+        store = _seed_capability_scenario()
+        rollup = get_capability_rollup(store, "db:order", "downstream", max_depth=2)
+        assert rollup is not None
+        order_group = next(g for g in rollup.groups if g.capability.id == "cap:order")
+        assert {e.id for e in order_group.entities} == {"api:order"}
+
+    def test_depth_limits_how_far_the_rollup_reaches(self) -> None:
+        store = _seed_capability_scenario()
+        rollup = get_capability_rollup(store, "db:order", "downstream", max_depth=1)
+        assert rollup is not None
+        capability_ids = {g.capability.id for g in rollup.groups}
+        assert capability_ids == {"cap:order"}  # App1's capability is 2 hops away
+
+    def test_groups_are_sorted_by_capability_name(self) -> None:
+        store = _seed_capability_scenario()
+        rollup = get_capability_rollup(store, "db:order", "downstream", max_depth=2)
+        assert rollup is not None
+        names = [g.capability.name for g in rollup.groups]
+        assert names == sorted(names)

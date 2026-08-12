@@ -13,8 +13,8 @@ from fastapi.testclient import TestClient
 from src.api.deps import get_store
 from src.api.main import app
 from src.graph.fallback_store import FallbackGraphStore
-from src.ontology.entities import API, Application, Database, Team
-from src.ontology.relationships import Consumes, OwnedBy, ReadsFrom
+from src.ontology.entities import API, Application, BusinessCapability, Database, Team
+from src.ontology.relationships import Consumes, OwnedBy, ReadsFrom, Supports
 
 
 @pytest.fixture
@@ -99,6 +99,27 @@ def client(monkeypatch):
         ),
         "API",
         "Database",
+    )
+    seeded.upsert_node(
+        "BusinessCapability",
+        BusinessCapability(
+            id="cap:cap-catalog:1",
+            name="Order Management",
+            source_system="cap-catalog",
+            source_record_id="1",
+            capability_area="Commerce",
+        ),
+    )
+    seeded.upsert_relationship(
+        "SUPPORTS",
+        Supports(
+            source_id="app:cmdb:1",
+            target_id="cap:cap-catalog:1",
+            source_system="cap-catalog",
+            source_record_id="1",
+        ),
+        "Application",
+        "BusinessCapability",
     )
     app.dependency_overrides[get_store] = lambda: seeded
 
@@ -348,3 +369,54 @@ class TestOwnershipRollupRoute:
         assert response.status_code == 200
         assert 'hx-get="/entities/app:cmdb:1/ownership"' in response.text
         assert 'id="ownership-rollup"' in response.text
+
+
+class TestBusinessCapabilitiesOnDetailPage:
+    def test_shows_capabilities_directly_supported_by_the_entity(
+        self, client: TestClient
+    ) -> None:
+        response = client.get("/entities/app:cmdb:1")
+        assert response.status_code == 200
+        assert "Order Management" in response.text
+
+    def test_shows_empty_state_when_entity_supports_nothing_directly(
+        self, client: TestClient
+    ) -> None:
+        response = client.get("/entities/db:db-metadata:1")
+        assert response.status_code == 200
+        assert "does not directly support any capability" in response.text
+
+    def test_detail_page_includes_the_capability_rollup_controls(
+        self, client: TestClient
+    ) -> None:
+        response = client.get("/entities/app:cmdb:1")
+        assert response.status_code == 200
+        assert 'hx-get="/entities/app:cmdb:1/capabilities"' in response.text
+        assert 'id="capability-rollup"' in response.text
+
+
+class TestCapabilityRollupRoute:
+    def test_unknown_entity_id_returns_404(self, client: TestClient) -> None:
+        response = client.get("/entities/does-not-exist/capabilities")
+        assert response.status_code == 404
+
+    def test_rolls_up_a_capability_supported_two_hops_downstream(
+        self, client: TestClient
+    ) -> None:
+        # OrdersDB has no capability of its own, but Storefront (2 hops
+        # downstream via the API) supports Order Management.
+        response = client.get(
+            "/entities/db:db-metadata:1/capabilities",
+            params={"direction": "downstream", "depth": 2},
+        )
+        assert response.status_code == 200
+        assert "Order Management" in response.text
+        assert "Storefront" in response.text
+
+    def test_depth_1_does_not_yet_reach_the_capability(self, client: TestClient) -> None:
+        response = client.get(
+            "/entities/db:db-metadata:1/capabilities",
+            params={"direction": "downstream", "depth": 1},
+        )
+        assert response.status_code == 200
+        assert "No business capabilities found in that direction." in response.text

@@ -637,3 +637,91 @@ def get_ownership_rollup(
         max_depth=traversal.max_depth,
         groups=groups,
     )
+
+
+def _capability_ids_by_entity_id(store: GraphStore) -> dict[str, list[str]]:
+    supports_by_entity_id: dict[str, list[str]] = {}
+    for rel in store.get_all_relationships():
+        if rel["rel_type"] == "SUPPORTS":
+            supports_by_entity_id.setdefault(rel["source_id"], []).append(rel["target_id"])
+    return supports_by_entity_id
+
+
+def get_direct_capabilities(store: GraphStore, entity_id: str) -> list[EntityRef] | None:
+    """FR10: business capabilities directly supported by a single entity
+    (`Application`/`Service`/`API` -SUPPORTS-> `BusinessCapability`, per
+    `DATA_MODEL.md` -- other node types never have an outbound `SUPPORTS`
+    edge, so this is legitimately empty for them). Returns `None` if
+    `entity_id` doesn't match a node.
+    """
+    node_by_id = {n["id"]: n for n in store.get_all_nodes()}
+    if entity_id not in node_by_id:
+        return None
+
+    capability_ids = _capability_ids_by_entity_id(store).get(entity_id, [])
+    capabilities = [
+        _entity_ref(node_by_id[capability_id])
+        for capability_id in capability_ids
+        if capability_id in node_by_id
+    ]
+    capabilities.sort(key=lambda c: c.name)
+    return capabilities
+
+
+@dataclass(frozen=True)
+class CapabilityGroup:
+    capability: EntityRef
+    entities: list[EntityRef]  # subtree entities that support this capability
+
+
+@dataclass(frozen=True)
+class CapabilityRollup:
+    root_id: str
+    direction: TraversalDirection
+    max_depth: int
+    groups: list[CapabilityGroup]
+
+
+def get_capability_rollup(
+    store: GraphStore,
+    entity_id: str,
+    direction: TraversalDirection,
+    max_depth: int = DEFAULT_TRAVERSAL_DEPTH,
+) -> CapabilityRollup | None:
+    """FR10 for entities that don't support a capability directly (a
+    `Database`, `DataPipeline`, ...): every `BusinessCapability` reached
+    by following `SUPPORTS` from any entity in `entity_id`'s dependency
+    subtree (the same bounded `get_dependency_traversal` as FR4/FR5/FR9).
+    Answers golden question 4 ("Which business capabilities depend on
+    Order Database?") via a downstream rollup from Order Database.
+    Returns `None` if `entity_id` doesn't match a node.
+    """
+    traversal = get_dependency_traversal(store, entity_id, direction, max_depth=max_depth)
+    if traversal is None:
+        return None
+
+    node_by_id = {n["id"]: n for n in store.get_all_nodes()}
+    capability_ids_by_entity_id = _capability_ids_by_entity_id(store)
+
+    entities_by_capability_id: dict[str, list[EntityRef]] = {}
+    for traversal_node in traversal.nodes:
+        for capability_id in capability_ids_by_entity_id.get(traversal_node.entity.id, []):
+            if capability_id not in node_by_id:
+                continue
+            entities_by_capability_id.setdefault(capability_id, []).append(traversal_node.entity)
+
+    groups = [
+        CapabilityGroup(
+            capability=_entity_ref(node_by_id[capability_id]),
+            entities=sorted(entities, key=lambda e: e.name),
+        )
+        for capability_id, entities in entities_by_capability_id.items()
+    ]
+    groups.sort(key=lambda g: g.capability.name)
+
+    return CapabilityRollup(
+        root_id=entity_id,
+        direction=direction,
+        max_depth=traversal.max_depth,
+        groups=groups,
+    )

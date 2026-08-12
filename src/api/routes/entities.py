@@ -1,6 +1,7 @@
 """FR2 (metadata) + FR3 (direct dependencies) + FR4/FR5 (bounded upstream/
-downstream traversal) + FR9 (ownership rollup): the entity detail page --
-the destination search results (FR1) link to.
+downstream traversal) + FR9 (ownership rollup) + FR10 (business
+capabilities): the entity detail page -- the destination search results
+(FR1) link to.
 """
 
 from __future__ import annotations
@@ -12,7 +13,9 @@ from src.api.deps import get_store
 from src.graph.queries import (
     DEFAULT_TRAVERSAL_DEPTH,
     TraversalDirection,
+    get_capability_rollup,
     get_dependency_traversal,
+    get_direct_capabilities,
     get_direct_dependencies,
     get_entity_detail,
     get_ownership_rollup,
@@ -36,10 +39,15 @@ async def entity_detail(
             status_code=404,
         )
     dependencies = get_direct_dependencies(store, entity_id)
+    capabilities = get_direct_capabilities(store, entity_id)
     return templates.TemplateResponse(
         request=request,
         name="pages/entity_detail.html",
-        context={"entity": detail, "dependencies": dependencies},
+        context={
+            "entity": detail,
+            "dependencies": dependencies,
+            "capabilities": capabilities,
+        },
     )
 
 
@@ -105,5 +113,28 @@ async def entity_ownership(
     return templates.TemplateResponse(
         request=request,
         name="partials/ownership_rollup.html",
+        context={"rollup": rollup},
+    )
+
+
+@router.get("/entities/{entity_id}/capabilities", response_class=HTMLResponse)
+async def entity_capabilities(
+    request: Request,
+    entity_id: str,
+    direction: TraversalDirection = "downstream",
+    depth: int = DEFAULT_TRAVERSAL_DEPTH,
+    store: GraphStore = Depends(get_store),
+) -> HTMLResponse:
+    """FR10 subtree rollup partial -- defaults to downstream for the same
+    reason as `/ownership`: "which capabilities depend on this entity"
+    (golden question 4) is about what's built on top of it.
+    """
+    templates = request.app.state.templates
+    rollup = get_capability_rollup(store, entity_id, direction, max_depth=depth)
+    if rollup is None:
+        raise HTTPException(status_code=404, detail=f"No entity with id {entity_id!r}")
+    return templates.TemplateResponse(
+        request=request,
+        name="partials/capability_rollup.html",
         context={"rollup": rollup},
     )

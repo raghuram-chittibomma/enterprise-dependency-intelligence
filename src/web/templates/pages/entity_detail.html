@@ -175,4 +175,57 @@
   </div>
   <div id="ownership-rollup"></div>
 </section>
+
+<section class="dependency-section">
+  <h2>Business capabilities</h2>
+  {% if capabilities %}
+  <ul class="dependency-list">
+    {% for capability in capabilities %}
+    <li class="dependency-item">
+      <a href="/entities/{{ capability.id }}">
+        <span class="entity-label">{{ capability.label }}</span>
+        <span class="entity-name">{{ capability.name }}</span>
+      </a>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="entity-metadata-empty">{{ entity.name }} does not directly support any capability.</p>
+  {% endif %}
+
+  <p class="graph-hint">
+    Capabilities supported anywhere across {{ entity.name }}'s dependency subtree -- useful when
+    the entity itself (a database, a pipeline, ...) never supports a capability directly.
+  </p>
+  <div class="graph-controls">
+    <label for="capability-direction">Direction</label>
+    <select
+      id="capability-direction"
+      name="direction"
+      hx-get="/entities/{{ entity.id }}/capabilities"
+      hx-trigger="load, change"
+      hx-target="#capability-rollup"
+      hx-include="#capability-depth"
+    >
+      <option value="downstream" selected>Depended on by (downstream)</option>
+      <option value="upstream">Depends on (upstream)</option>
+    </select>
+    <label for="capability-depth">Depth</label>
+    <select
+      id="capability-depth"
+      name="depth"
+      hx-get="/entities/{{ entity.id }}/capabilities"
+      hx-trigger="change"
+      hx-target="#capability-rollup"
+      hx-include="#capability-direction"
+    >
+      <option value="1">1 hop</option>
+      <option value="2" selected>2 hops</option>
+      <option value="3">3 hops</option>
+      <option value="4">4 hops</option>
+      <option value="5">5 hops</option>
+    </select>
+  </div>
+  <div id="capability-rollup"></div>
+</section>
 {% endblock %}
