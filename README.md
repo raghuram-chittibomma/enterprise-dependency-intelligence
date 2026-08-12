@@ -32,7 +32,7 @@ See `docs/03_operations/RUNBOOK.md` for the full local development setup (Python
 
 ## Development process
 
-This project is built by an AI coding agent following the **Enterprise SDLC MCP** catalog (agents + skills for planning, review, and release readiness) — see `AGENTS.md` for the operating rules, and [`enterprise-sdlc-mcp`](https://github.com/raghuram-chittibomma/enterprise-sdlc-mcp) for the catalog itself. Delivery tracking for MVP1 is local-only (todo list + direct commits), not GitHub issues/PRs — see `docs/00_project/AI_ORCHESTRATOR_BRIEF.md` for why.
+Operating rules for AI coding agents live in `AGENTS.md`. Delivery tracking for MVP1 is local-only (todo list + direct commits), not GitHub issues/PRs — see `docs/00_project/AI_ORCHESTRATOR_BRIEF.md` for why. The Enterprise SDLC MCP server is turned off for this project; use built-in agent/review capabilities instead.
 
 ## Roadmap beyond MVP1
 
