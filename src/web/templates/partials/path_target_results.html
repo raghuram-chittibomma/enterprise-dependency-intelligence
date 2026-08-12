@@ -1,0 +1,29 @@
+{% if query and not results %}
+<p class="search-empty">No matches for &quot;{{ query }}&quot;.</p>
+{% elif results %}
+<ul class="search-result-list">
+  {% for r in results %}
+  <li class="search-result-card">
+    <button
+      type="button"
+      class="search-result-link path-target-button"
+      hx-get="/entities/{{ source_id }}/paths/result?target={{ r.id }}"
+      hx-target="#path-result"
+      hx-swap="innerHTML"
+    >
+      <div class="search-result-heading">
+        <span class="entity-label">{{ r.label }}</span>
+        <span class="entity-name">{{ r.name }}</span>
+        {% if r.criticality %}
+        <span class="badge badge-criticality-{{ r.criticality }}">{{ r.criticality }}</span>
+        {% endif %}
+        <span class="badge badge-lifecycle-{{ r.lifecycle_status }}">{{ r.lifecycle_status }}</span>
+      </div>
+      {% if r.description %}
+      <p class="entity-description">{{ r.description }}</p>
+      {% endif %}
+    </button>
+  </li>
+  {% endfor %}
+</ul>
+{% endif %}

@@ -8,6 +8,8 @@ from __future__ import annotations
 
 from src.graph.fallback_store import FallbackGraphStore
 from src.graph.queries import (
+    MAX_ALTERNATE_PATHS,
+    get_dependency_paths,
     get_dependency_traversal,
     get_direct_dependencies,
     get_entity_detail,
@@ -419,3 +421,176 @@ class TestGetDependencyTraversal:
             ("svc:cmdb:1", "svc:cmdb:2"),
             ("svc:cmdb:2", "svc:cmdb:1"),
         }
+
+
+def _seed_path_scenario() -> FallbackGraphStore:
+    """A "diamond-plus-direct" topology for FR6/FR7:
+
+    - App -READS_FROM-> DB directly (1 hop -- the shortest path).
+    - App -CONSUMES-> {API A, API B, API C, API D} -READS_FROM-> DB
+      (2 hops each -- four equal-length alternates, one more than
+      `MAX_ALTERNATE_PATHS`, to exercise the alternates cap).
+    - Orphan Application has no relationships at all, for the
+      no-path-exists case.
+    """
+    store = FallbackGraphStore()
+    store.upsert_node(
+        "Application",
+        Application(
+            id="app:1",
+            name="App",
+            source_system="cmdb",
+            source_record_id="1",
+            technology="Java",
+            environment="prod",
+        ),
+    )
+    store.upsert_node(
+        "Database",
+        Database(
+            id="db:1",
+            name="DB",
+            source_system="db-metadata",
+            source_record_id="1",
+            engine="PostgreSQL",
+        ),
+    )
+    store.upsert_relationship(
+        "READS_FROM",
+        ReadsFrom(
+            source_id="app:1",
+            target_id="db:1",
+            source_system="db-metadata",
+            source_record_id="1",
+        ),
+        "Application",
+        "Database",
+    )
+    for letter in "ABCD":
+        api_id = f"api:{letter}"
+        store.upsert_node(
+            "API",
+            API(
+                id=api_id,
+                name=f"API {letter}",
+                source_system="api-catalog",
+                source_record_id=letter,
+                version="v1",
+                protocol="REST",
+            ),
+        )
+        store.upsert_relationship(
+            "CONSUMES",
+            Consumes(
+                source_id="app:1",
+                target_id=api_id,
+                source_system="api-catalog",
+                source_record_id=letter,
+            ),
+            "Application",
+            "API",
+        )
+        store.upsert_relationship(
+            "READS_FROM",
+            ReadsFrom(
+                source_id=api_id,
+                target_id="db:1",
+                source_system="db-metadata",
+                source_record_id=letter,
+            ),
+            "API",
+            "Database",
+        )
+    store.upsert_node(
+        "Application",
+        Application(
+            id="app:orphan",
+            name="Orphan App",
+            source_system="cmdb",
+            source_record_id="orphan",
+            technology="Java",
+            environment="prod",
+        ),
+    )
+    return store
+
+
+class TestGetDependencyPaths:
+    def test_returns_none_for_unknown_source_id(self) -> None:
+        store = _seed_path_scenario()
+        assert get_dependency_paths(store, "does-not-exist", "db:1") is None
+
+    def test_returns_none_for_unknown_target_id(self) -> None:
+        store = _seed_path_scenario()
+        assert get_dependency_paths(store, "app:1", "does-not-exist") is None
+
+    def test_source_equal_to_target_is_a_trivial_single_node_path(self) -> None:
+        store = _seed_path_scenario()
+        result = get_dependency_paths(store, "app:1", "app:1")
+        assert result is not None
+        assert result.shortest is not None
+        assert [n.id for n in result.shortest.nodes] == ["app:1"]
+        assert result.shortest.edges == []
+        assert result.alternates == []
+
+    def test_no_dependency_path_connects_disconnected_entities(self) -> None:
+        store = _seed_path_scenario()
+        result = get_dependency_paths(store, "app:1", "app:orphan")
+        assert result is not None
+        assert result.shortest is None
+        assert result.alternates == []
+
+    def test_shortest_path_is_the_minimum_hop_walk(self) -> None:
+        store = _seed_path_scenario()
+        result = get_dependency_paths(store, "app:1", "db:1")
+        assert result is not None
+        assert result.shortest is not None
+        assert result.shortest.hops == 1
+        assert [n.id for n in result.shortest.nodes] == ["app:1", "db:1"]
+
+    def test_path_edges_preserve_the_original_relationship_direction(self) -> None:
+        store = _seed_path_scenario()
+        result = get_dependency_paths(store, "app:1", "db:1")
+        assert result is not None
+        assert result.shortest is not None
+        edge = result.shortest.edges[0]
+        assert edge.source_id == "app:1"
+        assert edge.target_id == "db:1"
+        assert edge.rel_type == "READS_FROM"
+
+    def test_walking_a_dependency_edge_against_its_direction_is_allowed(self) -> None:
+        # Reverse the query: DB doesn't depend on anything, but the
+        # connection is still findable walking the READS_FROM edge
+        # backwards -- direction only matters for FR3's upstream/downstream
+        # labeling, not for "are these two systems connected" (FR6/FR7).
+        store = _seed_path_scenario()
+        result = get_dependency_paths(store, "db:1", "app:1")
+        assert result is not None
+        assert result.shortest is not None
+        assert [n.id for n in result.shortest.nodes] == ["db:1", "app:1"]
+        edge = result.shortest.edges[0]
+        assert (edge.source_id, edge.target_id) == ("app:1", "db:1")
+
+    def test_alternate_paths_are_found_when_they_exist(self) -> None:
+        store = _seed_path_scenario()
+        result = get_dependency_paths(store, "app:1", "db:1")
+        assert result is not None
+        assert len(result.alternates) > 0
+        for alternate in result.alternates:
+            assert alternate.hops == 2  # the App-API-DB detours
+
+    def test_alternate_paths_are_capped_at_the_configured_maximum(self) -> None:
+        store = _seed_path_scenario()
+        result = get_dependency_paths(store, "app:1", "db:1")
+        assert result is not None
+        assert len(result.alternates) == MAX_ALTERNATE_PATHS
+
+    def test_alternates_are_distinct_from_each_other_and_the_shortest(self) -> None:
+        store = _seed_path_scenario()
+        result = get_dependency_paths(store, "app:1", "db:1")
+        assert result is not None
+        assert result.shortest is not None
+        node_sequences = [tuple(n.id for n in result.shortest.nodes)]
+        for alternate in result.alternates:
+            node_sequences.append(tuple(n.id for n in alternate.nodes))
+        assert len(node_sequences) == len(set(node_sequences))

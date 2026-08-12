@@ -257,3 +257,54 @@ class TestDependencyGraphRoute:
             "/entities/app:cmdb:1/graph", params={"direction": "sideways"}
         )
         assert response.status_code == 422
+
+
+class TestPathsRoutes:
+    def test_search_excludes_the_entity_itself(self, client: TestClient) -> None:
+        response = client.get(
+            "/entities/app:cmdb:1/paths/search", params={"q": "Storefront"}
+        )
+        assert response.status_code == 200
+        assert "app:cmdb:1" not in response.text
+
+    def test_search_finds_a_candidate_target(self, client: TestClient) -> None:
+        response = client.get("/entities/app:cmdb:1/paths/search", params={"q": "OrdersDB"})
+        assert response.status_code == 200
+        assert "OrdersDB" in response.text
+        assert 'hx-get="/entities/app:cmdb:1/paths/result?target=db:db-metadata:1"' in (
+            response.text
+        )
+
+    def test_result_renders_the_shortest_path_chain(self, client: TestClient) -> None:
+        response = client.get(
+            "/entities/app:cmdb:1/paths/result", params={"target": "db:db-metadata:1"}
+        )
+        assert response.status_code == 200
+        assert "Shortest path to OrdersDB" in response.text
+        assert "2 hops" in response.text
+        assert "Customer API v1" in response.text
+        assert "CONSUMES" in response.text
+        assert "READS_FROM" in response.text
+
+    def test_result_reports_no_path_when_none_exists(self, client: TestClient) -> None:
+        # The owning team is only reachable via OWNED_BY, which isn't a
+        # dependency edge, so no dependency path connects them.
+        response = client.get(
+            "/entities/app:cmdb:1/paths/result",
+            params={"target": "team:team-ownership:1"},
+        )
+        assert response.status_code == 200
+        assert "No dependency path found" in response.text
+
+    def test_result_handles_an_unknown_target_gracefully(self, client: TestClient) -> None:
+        response = client.get(
+            "/entities/app:cmdb:1/paths/result", params={"target": "does-not-exist"}
+        )
+        assert response.status_code == 200
+        assert "Could not compute a path" in response.text
+
+    def test_detail_page_includes_the_path_explorer_section(self, client: TestClient) -> None:
+        response = client.get("/entities/app:cmdb:1")
+        assert response.status_code == 200
+        assert 'hx-get="/entities/app:cmdb:1/paths/search"' in response.text
+        assert 'id="path-result"' in response.text

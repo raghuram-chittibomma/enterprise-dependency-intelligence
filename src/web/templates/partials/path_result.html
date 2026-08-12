@@ -1,0 +1,43 @@
+{% macro render_chain(path) %}
+<ol class="path-chain">
+  {% for node in path.nodes %}
+  <li class="path-chain-node">
+    <a href="/entities/{{ node.id }}">
+      <span class="entity-label">{{ node.label }}</span>
+      <span class="entity-name">{{ node.name }}</span>
+    </a>
+  </li>
+  {% if not loop.last %}
+  {% set edge = path.edges[loop.index0] %}
+  <li class="path-chain-edge">
+    <span class="rel-type-badge">
+      {% if edge.source_id == node.id %}&rarr;{% else %}&larr;{% endif %}
+      {{ edge.rel_type }}
+    </span>
+  </li>
+  {% endif %}
+  {% endfor %}
+</ol>
+{% endmacro %}
+
+{% if result is none %}
+<p class="entity-metadata-empty">Could not compute a path to {{ target_name }}.</p>
+{% elif result.shortest is none %}
+<p class="entity-metadata-empty">No dependency path found to {{ target_name }}.</p>
+{% else %}
+<div class="path-result-block">
+  <h3>
+    Shortest path to {{ target_name }}
+    ({{ result.shortest.hops }} hop{{ "s" if result.shortest.hops != 1 else "" }})
+  </h3>
+  {{ render_chain(result.shortest) }}
+</div>
+{% if result.alternates %}
+<div class="path-result-block">
+  <h3>Alternate paths ({{ result.alternates | length }})</h3>
+  {% for alt in result.alternates %}
+  {{ render_chain(alt) }}
+  {% endfor %}
+</div>
+{% endif %}
+{% endif %}

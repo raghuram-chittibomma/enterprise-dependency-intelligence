@@ -89,6 +89,15 @@ class EntityDetail:
 DEPENDENCY_REL_TYPES = frozenset({"CONSUMES", "READS_FROM", "WRITES_TO", "INTEGRATES_WITH"})
 
 
+def _dependency_relationships(store: GraphStore) -> list[dict]:
+    """The dependency-only subset of relationships (`DEPENDENCY_REL_TYPES`),
+    shared by FR3 (direct deps), FR4/FR5 (traversal), and FR6/FR7 (paths) --
+    every one of these features answers "how does A connect to B" over the
+    same substrate, just with a different traversal shape on top.
+    """
+    return [rel for rel in store.get_all_relationships() if rel["rel_type"] in DEPENDENCY_REL_TYPES]
+
+
 @dataclass(frozen=True)
 class EntityRef:
     """A lightweight reference to another entity -- enough to render a
@@ -247,9 +256,7 @@ def get_direct_dependencies(store: GraphStore, entity_id: str) -> DirectDependen
 
     upstream: list[DependencyEdge] = []
     downstream: list[DependencyEdge] = []
-    for rel in store.get_all_relationships():
-        if rel["rel_type"] not in DEPENDENCY_REL_TYPES:
-            continue
+    for rel in _dependency_relationships(store):
         if rel["source_id"] == entity_id and rel["target_id"] in node_by_id:
             other = node_by_id[rel["target_id"]]
             upstream.append(DependencyEdge(entity=_entity_ref(other), rel_type=rel["rel_type"]))
@@ -314,9 +321,7 @@ def get_dependency_traversal(
         return None
     max_depth = max(1, min(max_depth, MAX_TRAVERSAL_DEPTH))
 
-    dependency_rels = [
-        rel for rel in store.get_all_relationships() if rel["rel_type"] in DEPENDENCY_REL_TYPES
-    ]
+    dependency_rels = _dependency_relationships(store)
     adjacency: dict[str, list[str]] = {}
     for rel in dependency_rels:
         step_from, step_to = (
@@ -359,4 +364,185 @@ def get_dependency_traversal(
         max_depth=max_depth,
         nodes=traversal_nodes,
         edges=traversal_edges,
+    )
+
+
+# FR6/FR7 "dependency path investigation" (golden question 5) treats
+# dependency edges as undirected for connectivity: what an investigator
+# needs is *whether* two systems are linked and how, not which one is
+# formally upstream of the other for any single hop along the way. A
+# path can legitimately step "downstream" for one hop and "upstream" for
+# the next -- that's real topology, not a bug -- so each `PathEdge` keeps
+# the original relationship's direction rather than implying a consistent
+# one across the whole walk.
+ALTERNATE_PATH_SLACK = 2
+MAX_ALTERNATE_PATHS = 3
+# Hard ceiling on any path considered at all, independent of how long the
+# shortest path turns out to be -- protects the DFS enumeration below from
+# a pathologically dense future graph.
+MAX_PATH_HOPS = 8
+
+
+@dataclass(frozen=True)
+class PathEdge:
+    source_id: str
+    target_id: str
+    rel_type: str
+
+
+@dataclass(frozen=True)
+class DependencyPath:
+    """One source-to-target walk: `nodes[0]` is the source, `nodes[-1]` is
+    the target, and `edges[i]` connects `nodes[i]` to `nodes[i + 1]`.
+    """
+
+    nodes: list[EntityRef]
+    edges: list[PathEdge]
+
+    @property
+    def hops(self) -> int:
+        return len(self.edges)
+
+
+@dataclass(frozen=True)
+class PathSearchResult:
+    source_id: str
+    target_id: str
+    shortest: DependencyPath | None  # None only when no path connects them
+    alternates: list[DependencyPath]
+
+
+def _bfs_shortest_path_ids(
+    adjacency: dict[str, list[tuple[str, dict]]], source_id: str, target_id: str
+) -> list[str] | None:
+    parent: dict[str, str] = {}
+    visited = {source_id}
+    frontier = [source_id]
+    while frontier and target_id not in visited:
+        next_frontier = []
+        for current_id in frontier:
+            for neighbor_id, _rel in adjacency.get(current_id, []):
+                if neighbor_id in visited:
+                    continue
+                visited.add(neighbor_id)
+                parent[neighbor_id] = current_id
+                next_frontier.append(neighbor_id)
+        frontier = next_frontier
+
+    if target_id not in visited:
+        return None
+
+    path_ids = [target_id]
+    while path_ids[-1] != source_id:
+        path_ids.append(parent[path_ids[-1]])
+    path_ids.reverse()
+    return path_ids
+
+
+def _enumerate_simple_paths(
+    adjacency: dict[str, list[tuple[str, dict]]],
+    source_id: str,
+    target_id: str,
+    max_hops: int,
+    max_paths_explored: int = 200,
+) -> list[tuple[list[str], list[dict]]]:
+    """DFS enumeration of every simple (no repeated node) walk from
+    `source_id` to `target_id` of at most `max_hops` edges, capped at
+    `max_paths_explored` complete paths so a denser future graph can't
+    make FR7 hang.
+    """
+    found: list[tuple[list[str], list[dict]]] = []
+    path_ids = [source_id]
+    edge_trail: list[dict] = []
+    visited = {source_id}
+
+    def dfs(current_id: str) -> None:
+        if len(found) >= max_paths_explored:
+            return
+        if current_id == target_id:
+            found.append((list(path_ids), list(edge_trail)))
+            return
+        if len(path_ids) - 1 >= max_hops:
+            return
+        for neighbor_id, rel in adjacency.get(current_id, []):
+            if neighbor_id in visited or len(found) >= max_paths_explored:
+                continue
+            visited.add(neighbor_id)
+            path_ids.append(neighbor_id)
+            edge_trail.append(rel)
+            dfs(neighbor_id)
+            edge_trail.pop()
+            path_ids.pop()
+            visited.remove(neighbor_id)
+
+    dfs(source_id)
+    return found
+
+
+def _to_dependency_path(
+    node_by_id: dict[str, dict], path_ids: list[str], rels: list[dict]
+) -> DependencyPath:
+    return DependencyPath(
+        nodes=[_entity_ref(node_by_id[node_id]) for node_id in path_ids],
+        edges=[
+            PathEdge(
+                source_id=rel["source_id"],
+                target_id=rel["target_id"],
+                rel_type=rel["rel_type"],
+            )
+            for rel in rels
+        ],
+    )
+
+
+def get_dependency_paths(
+    store: GraphStore, source_id: str, target_id: str
+) -> PathSearchResult | None:
+    """FR6/FR7: the shortest dependency path between two entities, plus up
+    to `MAX_ALTERNATE_PATHS` distinct alternates no more than
+    `ALTERNATE_PATH_SLACK` hops longer. Returns `None` if either id doesn't
+    match a node; returns a result with `shortest=None` if both exist but
+    no dependency path connects them.
+    """
+    nodes = store.get_all_nodes()
+    node_by_id = {n["id"]: n for n in nodes}
+    if source_id not in node_by_id or target_id not in node_by_id:
+        return None
+
+    if source_id == target_id:
+        trivial = DependencyPath(nodes=[_entity_ref(node_by_id[source_id])], edges=[])
+        return PathSearchResult(
+            source_id=source_id, target_id=target_id, shortest=trivial, alternates=[]
+        )
+
+    adjacency: dict[str, list[tuple[str, dict]]] = {}
+    for rel in _dependency_relationships(store):
+        adjacency.setdefault(rel["source_id"], []).append((rel["target_id"], rel))
+        adjacency.setdefault(rel["target_id"], []).append((rel["source_id"], rel))
+
+    shortest_ids = _bfs_shortest_path_ids(adjacency, source_id, target_id)
+    if shortest_ids is None:
+        return PathSearchResult(
+            source_id=source_id, target_id=target_id, shortest=None, alternates=[]
+        )
+
+    max_hops = min(len(shortest_ids) - 1 + ALTERNATE_PATH_SLACK, MAX_PATH_HOPS)
+    raw_paths = _enumerate_simple_paths(adjacency, source_id, target_id, max_hops=max_hops)
+
+    seen_sequences: set[tuple[str, ...]] = set()
+    candidates: list[tuple[list[str], list[dict]]] = []
+    for path_ids, rels in raw_paths:
+        key = tuple(path_ids)
+        if key in seen_sequences:
+            continue
+        seen_sequences.add(key)
+        candidates.append((path_ids, rels))
+    candidates.sort(key=lambda item: (len(item[0]), [node_by_id[i]["name"] for i in item[0]]))
+
+    dependency_paths = [_to_dependency_path(node_by_id, ids, rels) for ids, rels in candidates]
+    return PathSearchResult(
+        source_id=source_id,
+        target_id=target_id,
+        shortest=dependency_paths[0],
+        alternates=dependency_paths[1 : 1 + MAX_ALTERNATE_PATHS],
     )

@@ -118,4 +118,23 @@
     No dependencies found in that direction.
   </p>
 </section>
+
+<section class="dependency-section">
+  <h2>Find dependency path</h2>
+  <p class="graph-hint">
+    Find the shortest -- and any alternate -- dependency path between {{ entity.name }} and
+    another entity.
+  </p>
+  <input
+    type="text"
+    class="search-input"
+    name="q"
+    placeholder="Search for the other entity by name..."
+    hx-get="/entities/{{ entity.id }}/paths/search"
+    hx-trigger="input changed delay:300ms, search"
+    hx-target="#path-target-results"
+  />
+  <div id="path-target-results" class="search-results"></div>
+  <div id="path-result" class="path-result"></div>
+</section>
 {% endblock %}
