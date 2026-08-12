@@ -137,4 +137,42 @@
   <div id="path-target-results" class="search-results"></div>
   <div id="path-result" class="path-result"></div>
 </section>
+
+<section class="dependency-section">
+  <h2>Stakeholder rollup</h2>
+  <p class="graph-hint">
+    Every owning team across {{ entity.name }}'s dependency subtree --
+    "who do I need in the room before I change this system."
+  </p>
+  <div class="graph-controls">
+    <label for="ownership-direction">Direction</label>
+    <select
+      id="ownership-direction"
+      name="direction"
+      hx-get="/entities/{{ entity.id }}/ownership"
+      hx-trigger="load, change"
+      hx-target="#ownership-rollup"
+      hx-include="#ownership-depth"
+    >
+      <option value="downstream" selected>Depended on by (downstream)</option>
+      <option value="upstream">Depends on (upstream)</option>
+    </select>
+    <label for="ownership-depth">Depth</label>
+    <select
+      id="ownership-depth"
+      name="depth"
+      hx-get="/entities/{{ entity.id }}/ownership"
+      hx-trigger="change"
+      hx-target="#ownership-rollup"
+      hx-include="#ownership-direction"
+    >
+      <option value="1">1 hop</option>
+      <option value="2" selected>2 hops</option>
+      <option value="3">3 hops</option>
+      <option value="4">4 hops</option>
+      <option value="5">5 hops</option>
+    </select>
+  </div>
+  <div id="ownership-rollup"></div>
+</section>
 {% endblock %}

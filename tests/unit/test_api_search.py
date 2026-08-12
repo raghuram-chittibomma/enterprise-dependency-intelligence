@@ -308,3 +308,43 @@ class TestPathsRoutes:
         assert response.status_code == 200
         assert 'hx-get="/entities/app:cmdb:1/paths/search"' in response.text
         assert 'id="path-result"' in response.text
+
+
+class TestOwnershipRollupRoute:
+    def test_unknown_entity_id_returns_404(self, client: TestClient) -> None:
+        response = client.get("/entities/does-not-exist/ownership")
+        assert response.status_code == 404
+
+    def test_upstream_rollup_includes_the_roots_own_team(self, client: TestClient) -> None:
+        response = client.get(
+            "/entities/app:cmdb:1/ownership", params={"direction": "upstream", "depth": 2}
+        )
+        assert response.status_code == 200
+        assert "Commerce Platform Team" in response.text
+        assert "Storefront" in response.text
+
+    def test_upstream_rollup_groups_unowned_entities_together(self, client: TestClient) -> None:
+        response = client.get(
+            "/entities/app:cmdb:1/ownership", params={"direction": "upstream", "depth": 2}
+        )
+        assert response.status_code == 200
+        assert "No owning team recorded" in response.text
+        assert "Customer API v1" in response.text
+        assert "OrdersDB" in response.text
+
+    def test_downstream_rollup_reaches_the_owning_dependent(self, client: TestClient) -> None:
+        response = client.get(
+            "/entities/api:api-catalog:1/ownership",
+            params={"direction": "downstream", "depth": 1},
+        )
+        assert response.status_code == 200
+        assert "Commerce Platform Team" in response.text
+        assert "Storefront" in response.text
+
+    def test_detail_page_includes_the_stakeholder_rollup_section(
+        self, client: TestClient
+    ) -> None:
+        response = client.get("/entities/app:cmdb:1")
+        assert response.status_code == 200
+        assert 'hx-get="/entities/app:cmdb:1/ownership"' in response.text
+        assert 'id="ownership-rollup"' in response.text

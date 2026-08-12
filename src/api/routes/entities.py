@@ -1,6 +1,6 @@
 """FR2 (metadata) + FR3 (direct dependencies) + FR4/FR5 (bounded upstream/
-downstream traversal): the entity detail page -- the destination search
-results (FR1) link to.
+downstream traversal) + FR9 (ownership rollup): the entity detail page --
+the destination search results (FR1) link to.
 """
 
 from __future__ import annotations
@@ -15,6 +15,7 @@ from src.graph.queries import (
     get_dependency_traversal,
     get_direct_dependencies,
     get_entity_detail,
+    get_ownership_rollup,
 )
 from src.graph.store import GraphStore
 
@@ -81,4 +82,28 @@ async def entity_graph(
                 for edge in result.edges
             ],
         }
+    )
+
+
+@router.get("/entities/{entity_id}/ownership", response_class=HTMLResponse)
+async def entity_ownership(
+    request: Request,
+    entity_id: str,
+    direction: TraversalDirection = "downstream",
+    depth: int = DEFAULT_TRAVERSAL_DEPTH,
+    store: GraphStore = Depends(get_store),
+) -> HTMLResponse:
+    """FR9: the stakeholder rollup partial -- defaults to downstream since
+    "who do I need in the room before I change this system" (the TPM
+    persona) cares most about who is impacted by a change, not who this
+    entity itself depends on.
+    """
+    templates = request.app.state.templates
+    rollup = get_ownership_rollup(store, entity_id, direction, max_depth=depth)
+    if rollup is None:
+        raise HTTPException(status_code=404, detail=f"No entity with id {entity_id!r}")
+    return templates.TemplateResponse(
+        request=request,
+        name="partials/ownership_rollup.html",
+        context={"rollup": rollup},
     )

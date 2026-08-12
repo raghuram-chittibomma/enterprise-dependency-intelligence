@@ -546,3 +546,94 @@ def get_dependency_paths(
         shortest=dependency_paths[0],
         alternates=dependency_paths[1 : 1 + MAX_ALTERNATE_PATHS],
     )
+
+
+def _owner_by_entity_id(store: GraphStore) -> dict[str, str]:
+    return {
+        rel["source_id"]: rel["target_id"]
+        for rel in store.get_all_relationships()
+        if rel["rel_type"] == "OWNED_BY"
+    }
+
+
+def get_owning_team(store: GraphStore, entity_id: str) -> OwnerRef | None:
+    """FR8: the team that owns a single entity, if any. `get_entity_detail`
+    (FR2) already surfaces this for its one entity; this is the standalone
+    primitive for callers -- namely the NL query layer (increment-13) --
+    that only need the owner and not the rest of the entity's detail.
+    Returns `None` for an unknown entity id or an unowned entity alike
+    (this is a lookup, not an existence check -- callers that need to
+    distinguish those should check `get_entity_detail` first).
+    """
+    nodes = store.get_all_nodes()
+    node_by_id = {n["id"]: n for n in nodes}
+    owner_id = _owner_by_entity_id(store).get(entity_id)
+    if owner_id is None or owner_id not in node_by_id:
+        return None
+    owner_node = node_by_id[owner_id]
+    return OwnerRef(id=owner_node["id"], name=owner_node["name"])
+
+
+@dataclass(frozen=True)
+class OwnershipGroup:
+    """Every entity in the traversed subtree owned by one team --
+    `team=None` is the "no owning team recorded" bucket, kept rather than
+    dropped so a stakeholder rollup can flag ownership gaps.
+    """
+
+    team: OwnerRef | None
+    entities: list[EntityRef]
+
+
+@dataclass(frozen=True)
+class OwnershipRollup:
+    root_id: str
+    direction: TraversalDirection
+    max_depth: int
+    groups: list[OwnershipGroup]
+
+
+def get_ownership_rollup(
+    store: GraphStore,
+    entity_id: str,
+    direction: TraversalDirection,
+    max_depth: int = DEFAULT_TRAVERSAL_DEPTH,
+) -> OwnershipRollup | None:
+    """FR9: every distinct owning team across `entity_id`'s dependency
+    subtree (the same bounded `get_dependency_traversal` used by FR4/FR5)
+    -- "which teams do I need in the room before I change this system"
+    (`PRODUCT_BRIEF.md`'s TPM persona). Includes the root entity itself
+    (depth 0): its own team obviously belongs in that conversation.
+    Returns `None` if `entity_id` doesn't match a node.
+    """
+    traversal = get_dependency_traversal(store, entity_id, direction, max_depth=max_depth)
+    if traversal is None:
+        return None
+
+    owner_by_entity_id = _owner_by_entity_id(store)
+    node_by_id = {n["id"]: n for n in store.get_all_nodes()}
+
+    entities_by_owner_id: dict[str | None, list[EntityRef]] = {}
+    for traversal_node in traversal.nodes:
+        owner_id = owner_by_entity_id.get(traversal_node.entity.id)
+        if owner_id is not None and owner_id not in node_by_id:
+            owner_id = None
+        entities_by_owner_id.setdefault(owner_id, []).append(traversal_node.entity)
+
+    groups = [
+        OwnershipGroup(
+            team=OwnerRef(id=node_by_id[owner_id]["id"], name=node_by_id[owner_id]["name"])
+            if owner_id is not None
+            else None,
+            entities=sorted(entities, key=lambda e: e.name),
+        )
+        for owner_id, entities in entities_by_owner_id.items()
+    ]
+    groups.sort(key=lambda g: (g.team is None, g.team.name if g.team else ""))
+
+    return OwnershipRollup(
+        root_id=entity_id,
+        direction=direction,
+        max_depth=traversal.max_depth,
+        groups=groups,
+    )

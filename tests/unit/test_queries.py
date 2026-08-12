@@ -13,6 +13,8 @@ from src.graph.queries import (
     get_dependency_traversal,
     get_direct_dependencies,
     get_entity_detail,
+    get_ownership_rollup,
+    get_owning_team,
     search_entities,
 )
 from src.ontology.entities import API, Application, Database, Service, Team
@@ -594,3 +596,197 @@ class TestGetDependencyPaths:
         for alternate in result.alternates:
             node_sequences.append(tuple(n.id for n in alternate.nodes))
         assert len(node_sequences) == len(set(node_sequences))
+
+
+def _seed_ownership_scenario() -> FallbackGraphStore:
+    """App1 (Team A) -CONSUMES-> {Api1 (Team B), Api2 (unowned)};
+    Api1 -READS_FROM-> Db1 (Team B) -- exercises the "root itself
+    included", "grouped by team", and "unowned bucket" cases together.
+    """
+    store = FallbackGraphStore()
+    store.upsert_node(
+        "Team",
+        Team(
+            id="team:a",
+            name="Team A",
+            source_system="team-ownership",
+            source_record_id="a",
+            business_area="Commerce",
+        ),
+    )
+    store.upsert_node(
+        "Team",
+        Team(
+            id="team:b",
+            name="Team B",
+            source_system="team-ownership",
+            source_record_id="b",
+            business_area="Platform",
+        ),
+    )
+    store.upsert_node(
+        "Application",
+        Application(
+            id="app:1",
+            name="App1",
+            source_system="cmdb",
+            source_record_id="1",
+            technology="Java",
+            environment="prod",
+        ),
+    )
+    store.upsert_relationship(
+        "OWNED_BY",
+        OwnedBy(
+            source_id="app:1",
+            target_id="team:a",
+            source_system="team-ownership",
+            source_record_id="1",
+        ),
+        "Application",
+        "Team",
+    )
+    store.upsert_node(
+        "API",
+        API(
+            id="api:1",
+            name="Api1",
+            source_system="api-catalog",
+            source_record_id="1",
+            version="v1",
+            protocol="REST",
+        ),
+    )
+    store.upsert_relationship(
+        "OWNED_BY",
+        OwnedBy(
+            source_id="api:1",
+            target_id="team:b",
+            source_system="team-ownership",
+            source_record_id="2",
+        ),
+        "API",
+        "Team",
+    )
+    store.upsert_node(
+        "API",
+        API(
+            id="api:2",
+            name="Api2",
+            source_system="api-catalog",
+            source_record_id="2",
+            version="v1",
+            protocol="REST",
+        ),
+    )
+    store.upsert_relationship(
+        "CONSUMES",
+        Consumes(
+            source_id="app:1", target_id="api:1", source_system="api-catalog", source_record_id="1"
+        ),
+        "Application",
+        "API",
+    )
+    store.upsert_relationship(
+        "CONSUMES",
+        Consumes(
+            source_id="app:1", target_id="api:2", source_system="api-catalog", source_record_id="2"
+        ),
+        "Application",
+        "API",
+    )
+    store.upsert_node(
+        "Database",
+        Database(
+            id="db:1",
+            name="Db1",
+            source_system="db-metadata",
+            source_record_id="1",
+            engine="PostgreSQL",
+        ),
+    )
+    store.upsert_relationship(
+        "OWNED_BY",
+        OwnedBy(
+            source_id="db:1",
+            target_id="team:b",
+            source_system="team-ownership",
+            source_record_id="3",
+        ),
+        "Database",
+        "Team",
+    )
+    store.upsert_relationship(
+        "READS_FROM",
+        ReadsFrom(
+            source_id="api:1", target_id="db:1", source_system="db-metadata", source_record_id="1"
+        ),
+        "API",
+        "Database",
+    )
+    return store
+
+
+class TestGetOwningTeam:
+    def test_returns_the_owning_team(self) -> None:
+        store = _seed_ownership_scenario()
+        owner = get_owning_team(store, "app:1")
+        assert owner is not None
+        assert owner.id == "team:a"
+        assert owner.name == "Team A"
+
+    def test_returns_none_for_an_unowned_entity(self) -> None:
+        store = _seed_ownership_scenario()
+        assert get_owning_team(store, "api:2") is None
+
+    def test_returns_none_for_an_unknown_entity(self) -> None:
+        store = _seed_ownership_scenario()
+        assert get_owning_team(store, "does-not-exist") is None
+
+
+class TestGetOwnershipRollup:
+    def test_returns_none_for_unknown_id(self) -> None:
+        store = _seed_ownership_scenario()
+        assert get_ownership_rollup(store, "does-not-exist", "upstream") is None
+
+    def test_includes_the_root_entitys_own_team(self) -> None:
+        store = _seed_ownership_scenario()
+        rollup = get_ownership_rollup(store, "app:1", "upstream", max_depth=2)
+        assert rollup is not None
+        team_a_group = next(g for g in rollup.groups if g.team and g.team.id == "team:a")
+        assert {e.id for e in team_a_group.entities} == {"app:1"}
+
+    def test_groups_entities_by_owning_team(self) -> None:
+        store = _seed_ownership_scenario()
+        rollup = get_ownership_rollup(store, "app:1", "upstream", max_depth=2)
+        assert rollup is not None
+        team_b_group = next(g for g in rollup.groups if g.team and g.team.id == "team:b")
+        assert {e.id for e in team_b_group.entities} == {"api:1", "db:1"}
+
+    def test_unowned_entities_are_grouped_under_a_none_team(self) -> None:
+        store = _seed_ownership_scenario()
+        rollup = get_ownership_rollup(store, "app:1", "upstream", max_depth=2)
+        assert rollup is not None
+        unowned_group = next(g for g in rollup.groups if g.team is None)
+        assert {e.id for e in unowned_group.entities} == {"api:2"}
+
+    def test_depth_1_excludes_the_second_hop_owner(self) -> None:
+        store = _seed_ownership_scenario()
+        rollup = get_ownership_rollup(store, "app:1", "upstream", max_depth=1)
+        assert rollup is not None
+        all_entity_ids = {e.id for g in rollup.groups for e in g.entities}
+        assert "db:1" not in all_entity_ids
+
+    def test_downstream_direction_rolls_up_dependents_instead(self) -> None:
+        store = _seed_ownership_scenario()
+        rollup = get_ownership_rollup(store, "api:1", "downstream", max_depth=2)
+        assert rollup is not None
+        all_entity_ids = {e.id for g in rollup.groups for e in g.entities}
+        assert all_entity_ids == {"api:1", "app:1"}
+
+    def test_groups_are_sorted_by_team_name_with_unowned_last(self) -> None:
+        store = _seed_ownership_scenario()
+        rollup = get_ownership_rollup(store, "app:1", "upstream", max_depth=2)
+        assert rollup is not None
+        team_names = [g.team.name if g.team else None for g in rollup.groups]
+        assert team_names == ["Team A", "Team B", None]

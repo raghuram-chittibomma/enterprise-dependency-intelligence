@@ -1,0 +1,31 @@
+{% if not rollup.groups %}
+<p class="entity-metadata-empty">No entities found in that direction.</p>
+{% else %}
+<ul class="ownership-group-list">
+  {% for group in rollup.groups %}
+  <li class="ownership-group">
+    {% if group.team %}
+    <h3 class="ownership-team-name">
+      <a href="/entities/{{ group.team.id }}">{{ group.team.name }}</a>
+      <span class="ownership-count">({{ group.entities | length }})</span>
+    </h3>
+    {% else %}
+    <h3 class="ownership-team-name ownership-team-unowned">
+      No owning team recorded
+      <span class="ownership-count">({{ group.entities | length }})</span>
+    </h3>
+    {% endif %}
+    <ul class="dependency-list">
+      {% for entity in group.entities %}
+      <li class="dependency-item">
+        <a href="/entities/{{ entity.id }}">
+          <span class="entity-label">{{ entity.label }}</span>
+          <span class="entity-name">{{ entity.name }}</span>
+        </a>
+      </li>
+      {% endfor %}
+    </ul>
+  </li>
+  {% endfor %}
+</ul>
+{% endif %}
