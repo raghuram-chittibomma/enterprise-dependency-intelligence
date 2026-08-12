@@ -1,0 +1,33 @@
+{% if not query or not query.strip() %}
+{% elif not answer %}
+{% elif answer.status == "answered" %}
+<article class="ask-answer ask-answer-ok">
+  <p class="ask-answer-text">{{ answer.text }}</p>
+  {% if answer.resolved_entities %}
+  <p class="ask-resolved">
+    Resolved:
+    {% for entity in answer.resolved_entities %}
+    <a href="/entities/{{ entity.id }}">{{ entity.name }}</a>{% if not loop.last %}, {% endif %}
+    {% endfor %}
+  </p>
+  {% endif %}
+  {% if answer.evidence %}
+  <details class="ask-evidence">
+    <summary>Evidence ({{ answer.evidence|length }})</summary>
+    <ul class="ask-evidence-list">
+      {% for edge in answer.evidence %}
+      <li>
+        <a href="/entities/{{ edge.source_id }}">{{ edge.source_name }}</a>
+        <span class="rel-type-badge">{{ edge.rel_type }}</span>
+        <a href="/entities/{{ edge.target_id }}">{{ edge.target_name }}</a>
+      </li>
+      {% endfor %}
+    </ul>
+  </details>
+  {% endif %}
+</article>
+{% else %}
+<article class="ask-answer ask-answer-{{ answer.status }}">
+  <p class="ask-answer-text">{{ answer.text }}</p>
+</article>
+{% endif %}

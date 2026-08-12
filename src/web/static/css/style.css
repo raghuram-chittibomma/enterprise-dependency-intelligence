@@ -448,3 +448,123 @@ body {
   font-weight: 400;
   color: var(--color-text-muted);
 }
+
+.ask-page {
+  margin-top: 2.5rem;
+  padding-top: 2rem;
+  border-top: 1px solid var(--color-border);
+}
+
+.ask-page h2 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 0 0 0.5rem;
+}
+
+.ask-hint {
+  margin: 0 0 1rem;
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+}
+
+.ask-form {
+  display: flex;
+  gap: 0.6rem;
+  align-items: stretch;
+}
+
+.ask-form .search-input {
+  flex: 1;
+}
+
+.ask-submit {
+  padding: 0.75rem 1.1rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #fff;
+  background: var(--color-accent);
+  border: none;
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+
+.ask-submit:hover {
+  filter: brightness(1.08);
+}
+
+.ask-answer-container {
+  margin-top: 1rem;
+}
+
+.ask-answer {
+  padding: 1rem 1.1rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+}
+
+.ask-answer-ok {
+  border-left: 3px solid var(--color-accent);
+}
+
+.ask-answer-unsupported,
+.ask-answer-not_found,
+.ask-answer-ambiguous {
+  border-left: 3px solid var(--color-deprecated);
+}
+
+.ask-answer-text {
+  margin: 0;
+  font-size: 0.95rem;
+  line-height: 1.45;
+}
+
+.ask-resolved {
+  margin: 0.75rem 0 0;
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
+.ask-resolved a {
+  color: var(--color-accent);
+  text-decoration: none;
+}
+
+.ask-resolved a:hover {
+  text-decoration: underline;
+}
+
+.ask-evidence {
+  margin-top: 0.85rem;
+  font-size: 0.85rem;
+}
+
+.ask-evidence summary {
+  cursor: pointer;
+  color: var(--color-text-muted);
+}
+
+.ask-evidence-list {
+  list-style: none;
+  margin: 0.6rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.ask-evidence-list li {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.ask-evidence-list a {
+  color: var(--color-accent);
+  text-decoration: none;
+}
+
+.ask-evidence-list a:hover {
+  text-decoration: underline;
+}

@@ -18,4 +18,29 @@
   />
   <div id="search-results" class="search-results"></div>
 </section>
+
+<section class="ask-page">
+  <h2>Ask a dependency question</h2>
+  <p class="ask-hint">
+    Supports the 7 fixed question shapes from MVP1
+    (e.g. &quot;What does Order Service depend on?&quot;).
+    Anything else gets an explicit non-answer.
+  </p>
+  <form
+    class="ask-form"
+    hx-post="/ask"
+    hx-target="#ask-answer"
+    hx-swap="innerHTML"
+  >
+    <input
+      type="text"
+      name="q"
+      class="search-input"
+      placeholder="What applications use Customer Database?"
+      autocomplete="off"
+    />
+    <button type="submit" class="ask-submit">Ask</button>
+  </form>
+  <div id="ask-answer" class="ask-answer-container"></div>
+</section>
 {% endblock %}

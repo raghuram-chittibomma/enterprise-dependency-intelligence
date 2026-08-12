@@ -136,6 +136,12 @@ class TestSearchPage:
         assert response.status_code == 200
         assert 'hx-get="/search"' in response.text
 
+    def test_index_page_renders_ask_form(self, client: TestClient) -> None:
+        response = client.get("/")
+        assert response.status_code == 200
+        assert 'hx-post="/ask"' in response.text
+        assert 'id="ask-answer"' in response.text
+
     def test_static_css_is_served(self, client: TestClient) -> None:
         response = client.get("/static/css/style.css")
         assert response.status_code == 200
@@ -420,3 +426,33 @@ class TestCapabilityRollupRoute:
         )
         assert response.status_code == 200
         assert "No business capabilities found in that direction." in response.text
+
+
+class TestAskRoute:
+    def test_answered_question_renders_answer_and_evidence(self, client: TestClient) -> None:
+        response = client.post(
+            "/ask",
+            data={"q": "What does Storefront depend on?"},
+        )
+        assert response.status_code == 200
+        assert "ask-answer-ok" in response.text
+        assert "Customer API v1" in response.text
+        assert "Evidence" in response.text
+        assert "CONSUMES" in response.text
+
+    def test_unsupported_question_renders_explicit_non_answer(
+        self, client: TestClient
+    ) -> None:
+        response = client.post("/ask", data={"q": "Why is the sky blue?"})
+        assert response.status_code == 200
+        assert "ask-answer-unsupported" in response.text
+        assert "fixed set" in response.text.lower() or "only answer" in response.text.lower()
+
+    def test_unknown_entity_renders_not_found(self, client: TestClient) -> None:
+        response = client.post(
+            "/ask",
+            data={"q": "What does Totally Fake System depend on?"},
+        )
+        assert response.status_code == 200
+        assert "ask-answer-not_found" in response.text
+        assert "Totally Fake System" in response.text
