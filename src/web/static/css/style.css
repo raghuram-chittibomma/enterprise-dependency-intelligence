@@ -408,6 +408,8 @@ body {
 .path-chain-edge {
   display: flex;
   align-items: center;
+  gap: 0.35rem;
+  flex-wrap: wrap;
 }
 
 .ownership-group-list {
@@ -568,3 +570,80 @@ body {
 .ask-evidence-list a:hover {
   text-decoration: underline;
 }
+
+.dependency-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.evidence-badge {
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--color-text-muted);
+  background: color-mix(in srgb, var(--color-border) 55%, transparent);
+  border-radius: 999px;
+  padding: 0.15rem 0.5rem;
+  white-space: nowrap;
+  text-transform: lowercase;
+}
+
+.evidence-type-documented {
+  color: var(--color-active);
+  background: color-mix(in srgb, var(--color-active) 18%, transparent);
+}
+
+.evidence-type-inferred {
+  color: var(--color-planned);
+  background: color-mix(in srgb, var(--color-planned) 18%, transparent);
+}
+
+.evidence-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.evidence-item {
+  padding: 0.7rem 0.85rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+}
+
+.evidence-claim {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.4rem;
+}
+
+.evidence-claim a {
+  color: var(--color-accent);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.evidence-claim a:hover {
+  text-decoration: underline;
+}
+
+.evidence-provenance {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.evidence-record {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+

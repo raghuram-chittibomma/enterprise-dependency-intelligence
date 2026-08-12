@@ -15,6 +15,7 @@ from src.graph.queries import (
     get_direct_capabilities,
     get_direct_dependencies,
     get_entity_detail,
+    get_entity_evidence,
     get_ownership_rollup,
     get_owning_team,
     search_entities,
@@ -260,6 +261,15 @@ class TestGetDirectDependencies:
         assert len(deps.upstream) == 1
         assert deps.upstream[0].entity.id == "api:api-catalog:1"
         assert deps.upstream[0].rel_type == "CONSUMES"
+
+    def test_upstream_carries_relationship_provenance(self) -> None:
+        store = _seed_store()
+        deps = get_direct_dependencies(store, "app:cmdb:1")
+        assert deps is not None
+        edge = deps.upstream[0]
+        assert edge.source_system == "api-catalog"
+        assert edge.source_record_id == "1"
+        assert edge.evidence_type == "documented"
 
     def test_downstream_is_what_depends_on_the_entity(self) -> None:
         store = _seed_store()
@@ -948,3 +958,37 @@ class TestGetCapabilityRollup:
         assert rollup is not None
         names = [g.capability.name for g in rollup.groups]
         assert names == sorted(names)
+
+
+class TestGetEntityEvidence:
+    def test_returns_none_for_unknown_id(self) -> None:
+        store = _seed_store()
+        assert get_entity_evidence(store, "does-not-exist") is None
+
+    def test_includes_dependency_and_ownership_edges(self) -> None:
+        store = _seed_store()
+        evidence = get_entity_evidence(store, "app:cmdb:1")
+        assert evidence is not None
+        rel_types = {item.rel_type for item in evidence.items}
+        assert "CONSUMES" in rel_types
+        assert "OWNED_BY" in rel_types
+
+    def test_each_item_carries_adr0003_provenance(self) -> None:
+        store = _seed_store()
+        evidence = get_entity_evidence(store, "app:cmdb:1")
+        assert evidence is not None
+        consumes = next(item for item in evidence.items if item.rel_type == "CONSUMES")
+        assert consumes.source_system == "api-catalog"
+        assert consumes.source_record_id == "1"
+        assert consumes.evidence_type == "documented"
+        assert consumes.direction == "outbound"
+        assert consumes.other.id == "api:api-catalog:1"
+
+    def test_inbound_edges_are_marked_inbound(self) -> None:
+        store = _seed_store()
+        evidence = get_entity_evidence(store, "api:api-catalog:1")
+        assert evidence is not None
+        inbound = [item for item in evidence.items if item.direction == "inbound"]
+        assert any(
+            item.other.id == "app:cmdb:1" and item.rel_type == "CONSUMES" for item in inbound
+        )

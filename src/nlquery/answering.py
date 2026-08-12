@@ -23,7 +23,8 @@ AnswerStatus = Literal["answered", "unsupported", "not_found", "ambiguous"]
 class EvidenceEdge:
     """One graph edge cited as evidence for an answer (FR12) -- ids are
     included alongside names so the UI can link straight to each entity's
-    detail page.
+    detail page, and provenance fields come from the same relationship
+    row that produced the answer (ADR-0003).
     """
 
     source_id: str
@@ -31,6 +32,9 @@ class EvidenceEdge:
     rel_type: str
     target_id: str
     target_name: str
+    source_system: str = ""
+    source_record_id: str = ""
+    evidence_type: str = "documented"
 
 
 @dataclass(frozen=True)
@@ -83,6 +87,9 @@ def _path_evidence(path: DependencyPath) -> list[EvidenceEdge]:
             rel_type=edge.rel_type,
             target_id=edge.target_id,
             target_name=node_by_id[edge.target_id].name,
+            source_system=edge.source_system,
+            source_record_id=edge.source_record_id,
+            evidence_type=edge.evidence_type,
         )
         for edge in path.edges
     ]
@@ -102,6 +109,9 @@ def _handle_depends_on(retrieval: RetrievalResult) -> tuple[str, list[EvidenceEd
             rel_type=edge.rel_type,
             target_id=edge.entity.id,
             target_name=edge.entity.name,
+            source_system=edge.source_system,
+            source_record_id=edge.source_record_id,
+            evidence_type=edge.evidence_type,
         )
         for edge in upstream
     ]
@@ -123,6 +133,9 @@ def _handle_consumers_of(retrieval: RetrievalResult) -> tuple[str, list[Evidence
             rel_type="CONSUMES",
             target_id=entity.id,
             target_name=entity.name,
+            source_system=edge.source_system,
+            source_record_id=edge.source_record_id,
+            evidence_type=edge.evidence_type,
         )
         for edge in consumers
     ]
@@ -144,6 +157,9 @@ def _handle_consumed_by(retrieval: RetrievalResult) -> tuple[str, list[EvidenceE
             rel_type="CONSUMES",
             target_id=edge.entity.id,
             target_name=edge.entity.name,
+            source_system=edge.source_system,
+            source_record_id=edge.source_record_id,
+            evidence_type=edge.evidence_type,
         )
         for edge in apis
     ]
@@ -165,6 +181,9 @@ def _handle_used_by(retrieval: RetrievalResult) -> tuple[str, list[EvidenceEdge]
             rel_type=edge.rel_type,
             target_id=entity.id,
             target_name=entity.name,
+            source_system=edge.source_system,
+            source_record_id=edge.source_record_id,
+            evidence_type=edge.evidence_type,
         )
         for edge in apps
     ]

@@ -456,3 +456,21 @@ class TestAskRoute:
         assert response.status_code == 200
         assert "ask-answer-not_found" in response.text
         assert "Totally Fake System" in response.text
+
+
+class TestEvidencePanel:
+    def test_detail_page_renders_evidence_section(self, client: TestClient) -> None:
+        response = client.get("/entities/app:cmdb:1")
+        assert response.status_code == 200
+        assert "Evidence" in response.text
+        assert "api-catalog" in response.text
+        assert "documented" in response.text
+        assert "CONSUMES" in response.text
+
+    def test_dependency_list_shows_source_system_and_evidence_type(
+        self, client: TestClient
+    ) -> None:
+        response = client.get("/entities/app:cmdb:1")
+        assert response.status_code == 200
+        assert "evidence-badge" in response.text
+        assert "api-catalog" in response.text

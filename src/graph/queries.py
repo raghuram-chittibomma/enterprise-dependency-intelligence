@@ -116,6 +116,11 @@ class EntityRef:
 class DependencyEdge:
     entity: EntityRef
     rel_type: str
+    # ADR-0003 provenance, carried from the same relationship row that
+    # produced this edge so FR12 never has to re-look it up after the fact.
+    source_system: str
+    source_record_id: str
+    evidence_type: str
 
 
 @dataclass(frozen=True)
@@ -131,6 +136,14 @@ def _entity_ref(node: dict) -> EntityRef:
         name=node["name"],
         criticality=node.get("criticality"),
         lifecycle_status=node.get("lifecycle_status", "active"),
+    )
+
+
+def _edge_provenance(rel: dict) -> tuple[str, str, str]:
+    return (
+        rel.get("source_system", ""),
+        rel.get("source_record_id", ""),
+        rel.get("evidence_type", "documented"),
     )
 
 
@@ -257,12 +270,29 @@ def get_direct_dependencies(store: GraphStore, entity_id: str) -> DirectDependen
     upstream: list[DependencyEdge] = []
     downstream: list[DependencyEdge] = []
     for rel in _dependency_relationships(store):
+        source_system, source_record_id, evidence_type = _edge_provenance(rel)
         if rel["source_id"] == entity_id and rel["target_id"] in node_by_id:
             other = node_by_id[rel["target_id"]]
-            upstream.append(DependencyEdge(entity=_entity_ref(other), rel_type=rel["rel_type"]))
+            upstream.append(
+                DependencyEdge(
+                    entity=_entity_ref(other),
+                    rel_type=rel["rel_type"],
+                    source_system=source_system,
+                    source_record_id=source_record_id,
+                    evidence_type=evidence_type,
+                )
+            )
         if rel["target_id"] == entity_id and rel["source_id"] in node_by_id:
             other = node_by_id[rel["source_id"]]
-            downstream.append(DependencyEdge(entity=_entity_ref(other), rel_type=rel["rel_type"]))
+            downstream.append(
+                DependencyEdge(
+                    entity=_entity_ref(other),
+                    rel_type=rel["rel_type"],
+                    source_system=source_system,
+                    source_record_id=source_record_id,
+                    evidence_type=evidence_type,
+                )
+            )
 
     upstream.sort(key=lambda edge: (edge.rel_type, edge.entity.name))
     downstream.sort(key=lambda edge: (edge.rel_type, edge.entity.name))
@@ -388,6 +418,9 @@ class PathEdge:
     source_id: str
     target_id: str
     rel_type: str
+    source_system: str
+    source_record_id: str
+    evidence_type: str
 
 
 @dataclass(frozen=True)
@@ -489,6 +522,9 @@ def _to_dependency_path(
                 source_id=rel["source_id"],
                 target_id=rel["target_id"],
                 rel_type=rel["rel_type"],
+                source_system=rel.get("source_system", ""),
+                source_record_id=rel.get("source_record_id", ""),
+                evidence_type=rel.get("evidence_type", "documented"),
             )
             for rel in rels
         ],
@@ -725,3 +761,69 @@ def get_capability_rollup(
         max_depth=traversal.max_depth,
         groups=groups,
     )
+
+
+@dataclass(frozen=True)
+class EvidenceItem:
+    """One relationship involving an entity, with both endpoints and the
+    ADR-0003 provenance fields FR12 needs to render an evidence panel.
+    `direction` is relative to the entity the panel is for: `outbound`
+    means the entity is the relationship's source, `inbound` the target.
+    """
+
+    direction: Literal["outbound", "inbound"]
+    rel_type: str
+    other: EntityRef
+    source_system: str
+    source_record_id: str
+    evidence_type: str
+
+
+@dataclass(frozen=True)
+class EntityEvidence:
+    entity_id: str
+    items: list[EvidenceItem]
+
+
+def get_entity_evidence(store: GraphStore, entity_id: str) -> EntityEvidence | None:
+    """FR12: every relationship that touches `entity_id`, with provenance
+    carried straight from the relationship row (ADR-0003) -- the dedicated
+    evidence panel's data source. Includes non-dependency edges
+    (`OWNED_BY`, `SUPPORTS`, `REPLACED_BY`) as well as dependency ones,
+    since "what evidence backs this entity's place in the graph" is broader
+    than "what does it depend on." Returns `None` if `entity_id` doesn't
+    match a node.
+    """
+    nodes = store.get_all_nodes()
+    node_by_id = {n["id"]: n for n in nodes}
+    if entity_id not in node_by_id:
+        return None
+
+    items: list[EvidenceItem] = []
+    for rel in store.get_all_relationships():
+        source_system, source_record_id, evidence_type = _edge_provenance(rel)
+        if rel["source_id"] == entity_id and rel["target_id"] in node_by_id:
+            items.append(
+                EvidenceItem(
+                    direction="outbound",
+                    rel_type=rel["rel_type"],
+                    other=_entity_ref(node_by_id[rel["target_id"]]),
+                    source_system=source_system,
+                    source_record_id=source_record_id,
+                    evidence_type=evidence_type,
+                )
+            )
+        elif rel["target_id"] == entity_id and rel["source_id"] in node_by_id:
+            items.append(
+                EvidenceItem(
+                    direction="inbound",
+                    rel_type=rel["rel_type"],
+                    other=_entity_ref(node_by_id[rel["source_id"]]),
+                    source_system=source_system,
+                    source_record_id=source_record_id,
+                    evidence_type=evidence_type,
+                )
+            )
+
+    items.sort(key=lambda item: (item.direction != "outbound", item.rel_type, item.other.name))
+    return EntityEvidence(entity_id=entity_id, items=items)

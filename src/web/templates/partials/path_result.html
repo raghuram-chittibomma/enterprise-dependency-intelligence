@@ -14,6 +14,11 @@
       {% if edge.source_id == node.id %}&rarr;{% else %}&larr;{% endif %}
       {{ edge.rel_type }}
     </span>
+    {% if edge.source_system %}
+    <span class="evidence-badge" title="record {{ edge.source_record_id }}">
+      {{ edge.source_system }} &middot; {{ edge.evidence_type }}
+    </span>
+    {% endif %}
   </li>
   {% endif %}
   {% endfor %}

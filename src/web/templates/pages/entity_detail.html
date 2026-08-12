@@ -64,7 +64,12 @@
         <span class="entity-label">{{ edge.entity.label }}</span>
         <span class="entity-name">{{ edge.entity.name }}</span>
       </a>
-      <span class="rel-type-badge">{{ edge.rel_type }}</span>
+      <div class="dependency-meta">
+        <span class="rel-type-badge">{{ edge.rel_type }}</span>
+        <span class="evidence-badge" title="record {{ edge.source_record_id }}">
+          {{ edge.source_system }} &middot; {{ edge.evidence_type }}
+        </span>
+      </div>
     </li>
     {% endfor %}
   </ul>
@@ -83,7 +88,12 @@
         <span class="entity-label">{{ edge.entity.label }}</span>
         <span class="entity-name">{{ edge.entity.name }}</span>
       </a>
-      <span class="rel-type-badge">{{ edge.rel_type }}</span>
+      <div class="dependency-meta">
+        <span class="rel-type-badge">{{ edge.rel_type }}</span>
+        <span class="evidence-badge" title="record {{ edge.source_record_id }}">
+          {{ edge.source_system }} &middot; {{ edge.evidence_type }}
+        </span>
+      </div>
     </li>
     {% endfor %}
   </ul>
@@ -227,5 +237,41 @@
     </select>
   </div>
   <div id="capability-rollup"></div>
+</section>
+
+<section class="dependency-section evidence-section">
+  <h2>Evidence</h2>
+  <p class="graph-hint">
+    Every relationship involving {{ entity.name }}, with the source system and
+    documented/inferred status that backs it (FR12).
+  </p>
+  {% if evidence and evidence.items %}
+  <ul class="evidence-list">
+    {% for item in evidence.items %}
+    <li class="evidence-item">
+      <div class="evidence-claim">
+        {% if item.direction == "outbound" %}
+        <span class="entity-name">{{ entity.name }}</span>
+        <span class="rel-type-badge">{{ item.rel_type }}</span>
+        <a href="/entities/{{ item.other.id }}">{{ item.other.name }}</a>
+        {% else %}
+        <a href="/entities/{{ item.other.id }}">{{ item.other.name }}</a>
+        <span class="rel-type-badge">{{ item.rel_type }}</span>
+        <span class="entity-name">{{ entity.name }}</span>
+        {% endif %}
+      </div>
+      <div class="evidence-provenance">
+        <span class="evidence-badge">{{ item.source_system }}</span>
+        <span class="evidence-badge evidence-type-{{ item.evidence_type }}">
+          {{ item.evidence_type }}
+        </span>
+        <span class="evidence-record">record {{ item.source_record_id }}</span>
+      </div>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="entity-metadata-empty">No relationships recorded for this entity.</p>
+  {% endif %}
 </section>
 {% endblock %}

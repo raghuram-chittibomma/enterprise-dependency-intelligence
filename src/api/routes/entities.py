@@ -1,7 +1,7 @@
 """FR2 (metadata) + FR3 (direct dependencies) + FR4/FR5 (bounded upstream/
 downstream traversal) + FR9 (ownership rollup) + FR10 (business
-capabilities): the entity detail page -- the destination search results
-(FR1) link to.
+capabilities) + FR12 (evidence/provenance panel): the entity detail page
+-- the destination search results (FR1) link to.
 """
 
 from __future__ import annotations
@@ -18,6 +18,7 @@ from src.graph.queries import (
     get_direct_capabilities,
     get_direct_dependencies,
     get_entity_detail,
+    get_entity_evidence,
     get_ownership_rollup,
 )
 from src.graph.store import GraphStore
@@ -40,6 +41,7 @@ async def entity_detail(
         )
     dependencies = get_direct_dependencies(store, entity_id)
     capabilities = get_direct_capabilities(store, entity_id)
+    evidence = get_entity_evidence(store, entity_id)
     return templates.TemplateResponse(
         request=request,
         name="pages/entity_detail.html",
@@ -47,6 +49,7 @@ async def entity_detail(
             "entity": detail,
             "dependencies": dependencies,
             "capabilities": capabilities,
+            "evidence": evidence,
         },
     )
 
