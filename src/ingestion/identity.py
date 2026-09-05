@@ -18,6 +18,7 @@ TYPE_PREFIXES: dict[str, str] = {
     "ExternalSystem": "ext",
     "Team": "team",
     "BusinessCapability": "cap",
+    "Document": "doc",
 }
 
 

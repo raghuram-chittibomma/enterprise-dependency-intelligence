@@ -98,6 +98,9 @@ class RetrievalResult:
     open_ended: bool = False
     open_subgraph_nodes: list[EntityRef] | None = None
     open_subgraph_edges: list[SubgraphEdge] | None = None
+    # MVP3 Hybrid Doc RAG (`ADR-0006`): top-k document chunks fused with the
+    # subgraph when `HYBRID_DOC_RAG_ENABLED` is on.
+    doc_chunks: list | None = None
 
 
 def _resolve_entities(

@@ -9,7 +9,7 @@ can add a second `AnswerGenerator` that consumes the exact same
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Literal, Protocol
 
 from src.graph.queries import DependencyPath, EntityRef
@@ -45,6 +45,18 @@ class EvidenceEdge:
 
 
 @dataclass(frozen=True)
+class EvidenceDocChunk:
+    """One document chunk cited as evidence (MVP3 Hybrid Doc RAG / FR19)."""
+
+    document_id: str
+    document_name: str
+    chunk_id: str
+    text: str
+    source_system: str = ""
+    source_record_id: str = ""
+
+
+@dataclass(frozen=True)
 class AnswerResult:
     question: str
     status: AnswerStatus
@@ -52,6 +64,7 @@ class AnswerResult:
     text: str
     resolved_entities: list[EntityRef]
     evidence: list[EvidenceEdge]
+    doc_evidence: list[EvidenceDocChunk] = field(default_factory=list)
 
 
 class AnswerGenerator(Protocol):

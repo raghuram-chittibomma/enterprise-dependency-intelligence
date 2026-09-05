@@ -24,8 +24,10 @@
   <p class="ask-hint">
     Closed templates (e.g. &quot;What does Order Service depend on?&quot;) always work
     without an LLM. With Graph RAG enabled (<code>GRAPH_RAG_ENABLED</code>),
-    open-ended dependency questions are answered from a retrieved subgraph
-    with cited evidence — or refused when evidence is insufficient.
+    open-ended questions use a retrieved subgraph; with
+    <code>HYBRID_DOC_RAG_ENABLED</code> also on, architecture-doc passages are
+    fused in. Answers cite graph and/or document evidence — or refuse when
+    evidence is insufficient.
   </p>
   <form
     class="ask-form"

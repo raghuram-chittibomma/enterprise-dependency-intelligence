@@ -21,6 +21,7 @@ def _mvp1_golden_disables_graph_rag(monkeypatch: pytest.MonkeyPatch) -> None:
     developer has GRAPH_RAG_ENABLED set in their shell.
     """
     monkeypatch.delenv("GRAPH_RAG_ENABLED", raising=False)
+    monkeypatch.delenv("HYBRID_DOC_RAG_ENABLED", raising=False)
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)
 
 
@@ -29,7 +30,7 @@ def store():
     graph = FallbackGraphStore()
     result = run_ingestion(graph, data_dir=SAMPLE_DIR, unresolved_path=None)
     assert result.unresolved == [], f"golden graph has unresolved refs: {result.unresolved}"
-    assert graph.count_nodes() == 45
-    assert graph.count_relationships() == 101
+    assert graph.count_nodes() == 55
+    assert graph.count_relationships() == 131
     yield graph
     graph.close()

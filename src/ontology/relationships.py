@@ -1,4 +1,4 @@
-"""The 7 relationship types. See `docs/01_architecture/DATA_MODEL.md` for the
+"""The 8 relationship types. See `docs/01_architecture/DATA_MODEL.md` for the
 ontology rationale (including why `DEPENDS_ON` is intentionally never
 persisted) and `ADR-0003-provenance-model.md` for the provenance fields.
 """
@@ -126,3 +126,25 @@ class ReplacedBy(RelationshipBase):
     REL_TYPE: ClassVar[str] = "REPLACED_BY"
     ALLOWED_SOURCE_LABELS: ClassVar[frozenset[str]] = frozenset({"Application", "API"})
     ALLOWED_TARGET_LABELS: ClassVar[frozenset[str]] = frozenset({"Application", "API"})
+
+
+class DocumentedBy(RelationshipBase):
+    """Document describes / documents the target entity (MVP3, ADR-0006).
+
+    Direction is Document → entity (not the colloquial "entity is documented by").
+    """
+
+    REL_TYPE: ClassVar[str] = "DOCUMENTED_BY"
+    ALLOWED_SOURCE_LABELS: ClassVar[frozenset[str]] = frozenset({"Document"})
+    ALLOWED_TARGET_LABELS: ClassVar[frozenset[str]] = frozenset(
+        {
+            "Application",
+            "Service",
+            "API",
+            "Database",
+            "DataPipeline",
+            "Report",
+            "ExternalSystem",
+            "BusinessCapability",
+        }
+    )

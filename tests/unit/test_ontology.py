@@ -1,8 +1,8 @@
-"""Unit tests for the ontology models (increment-1).
+"""Unit tests for the ontology models (increment-1 / MVP3).
 
 Covers: every node type instantiates with the fields DATA_MODEL.md
 specifies, every relationship type enforces its documented endpoint-type
-rules, and the registries stay at exactly 9 nodes / 7 relationships (a
+rules, and the registries stay at exactly 10 nodes / 8 relationships (a
 regression here means the ontology drifted from the accepted data model
 without the doc being updated to match).
 """
@@ -22,6 +22,8 @@ from src.ontology import (
     Criticality,
     Database,
     DataPipeline,
+    Document,
+    DocumentedBy,
     EvidenceType,
     ExternalSystem,
     LifecycleStatus,
@@ -49,8 +51,8 @@ def _common_kwargs(**overrides: object) -> dict[str, object]:
 
 
 class TestNodeTypes:
-    def test_registry_has_exactly_9_node_types(self) -> None:
-        assert len(NODE_TYPES) == 9
+    def test_registry_has_exactly_10_node_types(self) -> None:
+        assert len(NODE_TYPES) == 10
 
     def test_application_requires_technology_and_environment(self) -> None:
         app = Application(**_common_kwargs(technology="Java/Spring Boot", environment="prod"))
@@ -107,14 +109,21 @@ class TestNodeTypes:
         )
         assert app.criticality == Criticality.CRITICAL
 
+    def test_document_requires_path(self) -> None:
+        doc = Document(**_common_kwargs(path="docs/storefront-architecture.md"))
+        assert doc.label() == "Document"
+        assert doc.doc_type == "architecture_note"
+        with pytest.raises(ValidationError):
+            Document(**_common_kwargs())  # missing path
+
     def test_extra_fields_are_rejected(self) -> None:
         with pytest.raises(ValidationError):
             Team(**_common_kwargs(business_area="Commerce", not_a_real_field="x"))
 
 
 class TestRelationshipTypes:
-    def test_registry_has_exactly_7_relationship_types(self) -> None:
-        assert len(RELATIONSHIP_TYPES) == 7
+    def test_registry_has_exactly_8_relationship_types(self) -> None:
+        assert len(RELATIONSHIP_TYPES) == 8
 
     def test_rel_type_strings_match_data_model(self) -> None:
         assert set(RELATIONSHIP_TYPES) == {
@@ -125,6 +134,7 @@ class TestRelationshipTypes:
             "SUPPORTS",
             "OWNED_BY",
             "REPLACED_BY",
+            "DOCUMENTED_BY",
         }
 
     def test_consumes_endpoint_rules(self) -> None:
@@ -176,6 +186,14 @@ class TestRelationshipTypes:
         ReplacedBy.validate_endpoints("API", "API")
         with pytest.raises(EndpointTypeError):
             ReplacedBy.validate_endpoints("Database", "Database")
+
+    def test_documented_by_endpoint_rules(self) -> None:
+        DocumentedBy.validate_endpoints("Document", "Application")
+        DocumentedBy.validate_endpoints("Document", "API")
+        with pytest.raises(EndpointTypeError):
+            DocumentedBy.validate_endpoints("Application", "Document")
+        with pytest.raises(EndpointTypeError):
+            DocumentedBy.validate_endpoints("Document", "Team")
 
     def test_depends_on_is_not_a_relationship_type(self) -> None:
         """DEPENDS_ON is computed at query time, never persisted (DATA_MODEL.md)."""

@@ -11,9 +11,9 @@
     {% endfor %}
   </p>
   {% endif %}
-  {% if answer.evidence %}
+  {% if answer.evidence or answer.doc_evidence %}
   <details class="ask-evidence">
-    <summary>Evidence ({{ answer.evidence|length }})</summary>
+    <summary>Evidence ({{ (answer.evidence|length) + (answer.doc_evidence|length) }})</summary>
     <ul class="ask-evidence-list">
       {% for edge in answer.evidence %}
       <li>
@@ -25,6 +25,19 @@
           {{ edge.source_system }} &middot; {{ edge.evidence_type }}
         </span>
         {% endif %}
+      </li>
+      {% endfor %}
+      {% for chunk in answer.doc_evidence %}
+      <li>
+        <a href="/entities/{{ chunk.document_id }}">{{ chunk.document_name }}</a>
+        <span class="rel-type-badge">DOC_CHUNK</span>
+        <code title="{{ chunk.chunk_id }}">{{ chunk.chunk_id }}</code>
+        {% if chunk.source_system %}
+        <span class="evidence-badge" title="record {{ chunk.source_record_id }}">
+          {{ chunk.source_system }} &middot; documented
+        </span>
+        {% endif %}
+        <div class="ask-doc-excerpt">{{ chunk.text[:240] }}{% if chunk.text|length > 240 %}…{% endif %}</div>
       </li>
       {% endfor %}
     </ul>

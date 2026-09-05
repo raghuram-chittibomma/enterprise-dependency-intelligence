@@ -15,7 +15,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from src.graph.queries import EntityRef, search_entities
+from src.graph.queries import EXACT_MATCH_SCORE, EntityRef, search_entities
 from src.graph.store import GraphStore
 
 # ADR-0002's `DEFAULT_FUZZY_THRESHOLD` for auto-resolving a name-only
@@ -61,6 +61,21 @@ def resolve_entity(
         return ResolutionResult(entity=None, ambiguous=False)
 
     top = candidates[0]
+    # An exact name match is never ambiguous with a longer title that merely
+    # contains the query as a substring (e.g. API "Customer API v1" vs Document
+    # "Customer API v1 Design Notes" after MVP3 docs landed).
+    if top.score >= EXACT_MATCH_SCORE:
+        return ResolutionResult(
+            entity=EntityRef(
+                id=top.id,
+                label=top.label,
+                name=top.name,
+                criticality=top.criticality,
+                lifecycle_status=top.lifecycle_status,
+            ),
+            ambiguous=False,
+        )
+
     runner_up = candidates[1] if len(candidates) > 1 else None
     if runner_up is not None and (top.score - runner_up.score) < RESOLUTION_MARGIN:
         return ResolutionResult(entity=None, ambiguous=True)

@@ -441,8 +441,10 @@ class TestAskRoute:
         assert "CONSUMES" in response.text
 
     def test_unsupported_question_renders_explicit_non_answer(
-        self, client: TestClient
+        self, client: TestClient, monkeypatch: pytest.MonkeyPatch
     ) -> None:
+        monkeypatch.delenv("GRAPH_RAG_ENABLED", raising=False)
+        monkeypatch.delenv("HYBRID_DOC_RAG_ENABLED", raising=False)
         response = client.post("/ask", data={"q": "Why is the sky blue?"})
         assert response.status_code == 200
         assert "ask-answer-unsupported" in response.text

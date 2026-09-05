@@ -2,7 +2,11 @@
 
 A knowledge-graph-backed application for enterprise dependency discovery, change-impact analysis, and (from MVP2 onward) Graph RAG and agentic investigation — built incrementally over a synthetic enterprise, **Meridian Retail Group**.
 
-**Current milestone: MVP2 — Graph RAG (building on MVP1).** MVP1's deterministic Dependency Explorer remains fully usable. Open-ended Ask is opt-in via Graph RAG (`ADR-0005`). See `docs/00_project/PROJECT_CHARTER.md` and `docs/00_project/PRODUCT_BRIEF.md`.
+**Current milestone: MVP3 — Hybrid Graph + Document RAG (building on MVP1–2).**
+MVP1's deterministic Dependency Explorer and MVP2 Graph RAG remain fully usable.
+Hybrid Ask fuses architecture-doc passages with the subgraph when
+`HYBRID_DOC_RAG_ENABLED` is on (`ADR-0006`). See `docs/00_project/PROJECT_CHARTER.md`
+and `docs/00_project/PRODUCT_BRIEF.md`.
 
 ## What this does today (MVP1)
 
@@ -38,8 +42,8 @@ Operating rules for AI coding agents live in `AGENTS.md`. Delivery tracking for 
 
 | Milestone | Adds |
 |---|---|
-| MVP2 — Graph RAG | Grounded LLM answers for open-ended questions, via dynamic graph retrieval over the same graph. |
-| MVP3 — Hybrid Graph + Document RAG | Unstructured architecture documentation fused with graph evidence. |
+| MVP2 — Graph RAG | Grounded LLM answers for open-ended questions, via dynamic graph retrieval over the same graph. **Done.** |
+| MVP3 — Hybrid Graph + Document RAG | Unstructured architecture documentation fused with graph evidence. **Done.** |
 | MVP4 — Agentic Investigation | Bounded, multi-step investigation producing evidence-backed reports. |
 | MVP5 — Advanced Enterprise Intelligence | Risk scoring, drift detection, what-if analysis. |
 

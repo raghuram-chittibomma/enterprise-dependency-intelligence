@@ -5,13 +5,16 @@ package is an implementation detail of that one call.
 MVP2 (`ADR-0005`): closed templates stay deterministic; unmatched questions
 optionally go through open-ended subgraph retrieval + LLMAnswerGenerator
 when `GRAPH_RAG_ENABLED` is set.
+
+MVP3 (`ADR-0006`): when `HYBRID_DOC_RAG_ENABLED` is also set, open-ended
+retrieval fuses top-k document chunks with the subgraph.
 """
 
 from __future__ import annotations
 
 from src.graph.store import GraphStore
 from src.nlquery.answering import AnswerResult, render_answer
-from src.nlquery.config import graph_rag_enabled
+from src.nlquery.config import graph_rag_enabled, hybrid_doc_rag_enabled
 from src.nlquery.engine import retrieve
 from src.nlquery.graphrag import retrieve_open_ended
 from src.nlquery.llm import LLMAnswerGenerator
@@ -30,7 +33,9 @@ def ask(store: GraphStore, question: str) -> AnswerResult:
             return render_answer(closed)
         if not graph_rag_enabled():
             return render_answer(closed)
-        open_retrieval = retrieve_open_ended(store, question)
+        open_retrieval = retrieve_open_ended(
+            store, question, include_docs=hybrid_doc_rag_enabled()
+        )
         return LLMAnswerGenerator().generate(open_retrieval)
 
     answer, latency_ms = timed(_run)

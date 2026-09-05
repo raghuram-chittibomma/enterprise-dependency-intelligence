@@ -10,18 +10,20 @@ Newest entry first. One entry per release/milestone.
 
 ### Added
 
+- **MVP3 Hybrid Graph + Document RAG (FR17–FR19, ADR-0006):** `Document` + `DOCUMENTED_BY`, synthetic Meridian architecture docs, local SQLite vector index (`src/retrieval/`), and open-ended Ask fusion of subgraph + top-k chunks when `HYBRID_DOC_RAG_ENABLED=true`. Citations may be graph edges and/or document chunk ids; unsupported claims refuse.
 - **MVP2 Graph RAG (FR14–FR16, ADR-0005):** open-ended Ask over a deterministically retrieved dependency subgraph with OpenAI-backed grounded generation (`LLMAnswerGenerator`). Closed 7-question templates remain fully deterministic. Opt-in via `GRAPH_RAG_ENABLED` + `OPENAI_API_KEY`. Citations are filtered to the retrieved subgraph; unanswered / fabricated citations become `insufficient_evidence`.
-- Open-ended retrieval (`src/nlquery/graphrag.py`), config helpers, Ask routing, homepage hint, faithfulness/refusal evals (`evals/test_mvp2_graphrag.py`) and fake-LLM unit tests.
+- Open-ended retrieval (`src/nlquery/graphrag.py`), config helpers, Ask routing, homepage hint, faithfulness/refusal evals (`evals/test_mvp2_graphrag.py`, `evals/test_mvp3_hybrid.py`) and fake-LLM / fake-embedder unit tests.
 
 ### Changed
 
-- Docs: ARCHITECTURE, PRODUCT_BRIEF, EVAL_STRATEGY, RUNBOOK, AGENTS, README updated for MVP2 Graph RAG boundary.
+- Docs: ARCHITECTURE, DATA_MODEL (10 nodes / 8 relationships), PRODUCT_BRIEF, EVAL_STRATEGY, RUNBOOK updated for MVP2/MVP3 boundaries.
+- Ontology expands to `Document` / `DOCUMENTED_BY`; datagen writes `data/sample/docs/`.
 
 ### Fixed
 
 ### Upgraded
 
-- `openai>=1.40,<2` added to `requirements.txt` for Graph RAG generation.
+- `openai>=1.40,<2` used for Graph RAG generation and `text-embedding-3-small` embeddings.
 
 <!-- Dependency/runtime upgrades handled by the Dependency Upgrade Agent go here. -->
 

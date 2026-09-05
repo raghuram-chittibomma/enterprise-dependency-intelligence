@@ -10,5 +10,6 @@ build/
 dist/
 .env
 data/unresolved/
+data/vectors/
 *.log
 .DS_Store

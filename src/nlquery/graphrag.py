@@ -57,6 +57,8 @@ def retrieve_open_ended(
     question: str,
     *,
     max_depth: int = DEFAULT_TRAVERSAL_DEPTH,
+    include_docs: bool = False,
+    doc_chunks: list | None = None,
 ) -> RetrievalResult:
     """Build an open-ended retrieval result for Graph RAG generation.
 
@@ -64,6 +66,9 @@ def retrieve_open_ended(
     (possibly empty-of-edges) subgraph when at least one seed entity is
     found. Never classifies intent — caller only invokes this after MVP1
     `classify()` returned None.
+
+    When `include_docs` is True (MVP3 Hybrid Doc RAG), attach `doc_chunks`
+    (caller-supplied or retrieved) for fused generation.
     """
     nodes = store.get_all_nodes()
     node_by_id = {n["id"]: n for n in nodes}
@@ -156,6 +161,15 @@ def retrieve_open_ended(
     # Keep a stable "entity" key for the first seed for logging convenience.
     resolved["entity"] = seeds[0]
 
+    attached_docs = None
+    if include_docs:
+        if doc_chunks is not None:
+            attached_docs = list(doc_chunks)
+        else:
+            from src.nlquery.doc_retrieve import retrieve_doc_chunks
+
+            attached_docs = retrieve_doc_chunks(question)
+
     return RetrievalResult(
         question=question,
         question_type=None,
@@ -164,6 +178,7 @@ def retrieve_open_ended(
         open_ended=True,
         open_subgraph_nodes=subgraph_nodes,
         open_subgraph_edges=edges,
+        doc_chunks=attached_docs,
     )
 
 

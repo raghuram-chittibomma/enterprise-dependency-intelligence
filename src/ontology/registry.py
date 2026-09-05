@@ -10,6 +10,7 @@ from src.ontology.entities import (
     BusinessCapability,
     Database,
     DataPipeline,
+    Document,
     ExternalSystem,
     NodeBase,
     Report,
@@ -18,6 +19,7 @@ from src.ontology.entities import (
 )
 from src.ontology.relationships import (
     Consumes,
+    DocumentedBy,
     IntegratesWith,
     OwnedBy,
     ReadsFrom,
@@ -39,6 +41,7 @@ NODE_TYPES: dict[str, type[NodeBase]] = {
         ExternalSystem,
         Team,
         BusinessCapability,
+        Document,
     )
 }
 
@@ -52,8 +55,9 @@ RELATIONSHIP_TYPES: dict[str, type[RelationshipBase]] = {
         Supports,
         OwnedBy,
         ReplacedBy,
+        DocumentedBy,
     )
 }
 
-assert len(NODE_TYPES) == 9, "Ontology drift: expected exactly 9 node types."
-assert len(RELATIONSHIP_TYPES) == 7, "Ontology drift: expected exactly 7 relationship types."
+assert len(NODE_TYPES) == 10, "Ontology drift: expected exactly 10 node types."
+assert len(RELATIONSHIP_TYPES) == 8, "Ontology drift: expected exactly 8 relationship types."

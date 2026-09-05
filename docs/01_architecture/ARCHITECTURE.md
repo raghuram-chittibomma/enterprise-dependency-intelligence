@@ -55,13 +55,14 @@ flowchart LR
 
 | Component | Responsibility | Location |
 |-----------|-----------------|----------|
-| Synthetic data generators | Deterministically generate the 5 MVP1 source datasets for the "Meridian Retail Group" scenario. | `src/datagen/`, output → `data/sample/` |
-| Source parsers | Parse each source format into a common in-memory `(entities, relationships)` shape. One parser per source, behind the `SourceParser` extension point. | `src/ingestion/parsers/` |
+| Synthetic data generators | Deterministically generate the Meridian source datasets (CMDB, catalogs, ownership, integrations) plus MVP3 architecture markdown under `data/sample/docs/`. | `src/datagen/`, output → `data/sample/` |
+| Source parsers | Parse each source format into a common in-memory `(entities, relationships)` shape. One parser per source, behind the `SourceParser` extension point (includes architecture docs → `Document` / `DOCUMENTED_BY`). | `src/ingestion/parsers/` |
 | Entity resolution | Resolve a parsed record to a stable node `id`: exact natural-key match first, `rapidfuzz` normalized-match fallback, unresolved queue otherwise. No LLM. | `src/ingestion/resolution.py` |
-| Ingestion loader | Idempotent `MERGE`-based writer that tags every node/relationship with provenance (`source_system`, `source_record_id`, `evidence_type`). Runs sources in order: CMDB → API Catalog → DB Metadata → Team Ownership → Integration Catalog. | `src/ingestion/loader.py` |
-| Graph store adapter | Uniform interface over the actual graph backend, behind the `GraphStore` extension point (ADR-0001). | `src/graph/store.py` (Neo4j driver-backed); `src/graph/store_fallback.py` (NetworkX+SQLite, only if the primary store is unreachable) |
+| Ingestion loader | Idempotent `MERGE`-based writer that tags every node/relationship with provenance (`source_system`, `source_record_id`, `evidence_type`). Runs sources in order: CMDB → API Catalog → DB Metadata → Team Ownership → Integration Catalog → Architecture Docs. | `src/ingestion/pipeline.py` |
+| Document retrieval | Chunk/embed architecture docs into local SQLite vectors; top-k retrieval for Hybrid Ask (`ADR-0006`). | `src/retrieval/` |
+| Graph store adapter | Uniform interface over the actual graph backend, behind the `GraphStore` extension point (ADR-0001). | `src/graph/store.py` (Neo4j driver-backed); `src/graph/fallback_store.py` (NetworkX+SQLite, only if the primary store is unreachable) |
 | Query templates | Parameterized Cypher (or fallback-store equivalent) implementing FR1–FR10 and FR12: search, detail, direct/transitive traversal, path finding, ownership rollup, capability view, evidence lookup. | `src/graph/queries.py` |
-| NL query layer | Deterministic intent classification → entity resolution → template dispatch for the 7 closed questions (FR11/FR13). When `GRAPH_RAG_ENABLED`, unmatched questions use open-ended subgraph retrieval + `LLMAnswerGenerator` (`ADR-0005`, FR14–FR16). | `src/nlquery/` |
+| NL query layer | Deterministic intent classification → entity resolution → template dispatch for the 7 closed questions (FR11/FR13). When `GRAPH_RAG_ENABLED`, unmatched questions use open-ended subgraph retrieval + `LLMAnswerGenerator` (`ADR-0005`, FR14–FR16). When `HYBRID_DOC_RAG_ENABLED`, fuse top-k doc chunks (`ADR-0006`, FR17–FR19). | `src/nlquery/` |
 | API layer | FastAPI routes exposing search, detail, traversal, paths, ownership, capabilities, NL query, and evidence endpoints. | `src/api/` |
 | UI layer | Server-rendered Jinja2 templates + HTMX for interactivity + Cytoscape.js (CDN) for subgraph visualization (FR5). No SPA build step. | `src/web/templates/`, `src/web/static/` |
 | Data quality checks | Automated checks for orphan nodes, duplicate natural keys, and referential consistency, run after ingestion and in CI. | `src/quality/`, `tests/` |
@@ -71,19 +72,20 @@ flowchart LR
 
 **Ingestion (offline, run on demand — not per-request):**
 
-1. `src/datagen/` writes the 5 synthetic source files to `data/sample/` (run once, or whenever the scenario dataset needs to grow).
+1. `src/datagen/` writes the synthetic source files to `data/sample/` (including architecture docs under `data/sample/docs/`).
 2. Each file is parsed by its `SourceParser` into `(entities, relationships)`.
 3. Entity resolution assigns/confirms each record's stable natural-key `id` (`ADR-0002`).
 4. The loader `MERGE`s nodes and relationships into Neo4j, tagging provenance (`ADR-0003`), in the fixed source order above so that, e.g., an API referenced by the Integration Catalog before the API Catalog runs still resolves correctly on re-ingestion.
-5. Data-quality checks run against the resulting graph (orphans, duplicates, referential consistency) and fail loudly if violated.
+5. After docs are ingested, `python -m src.retrieval.index_docs` chunks/embeds documents into `data/vectors/` (`ADR-0006`).
+6. Data-quality checks run against the resulting graph (orphans, duplicates, referential consistency) and fail loudly if violated.
 
 **Request-time (per user interaction):**
 
 1. A user action in the UI (search box, entity page, "find path" form, NL question box) triggers an HTMX request to a FastAPI route.
 2. Structured/templated routes (FR1–FR10, FR12) call `src/graph/queries.py` directly with the request's parameters.
-3. The NL query route (FR11/FR13/FR14) first classifies intent via `src/nlquery/`. Matching closed templates dispatch to the *same* FR1–FR10 query templates and `TemplateAnswerGenerator`. Unmatched questions: if Graph RAG is disabled, return FR13's explicit non-answer; if enabled, run open-ended subgraph retrieval then `LLMAnswerGenerator` (`ADR-0005`). Entity resolution failures still return not-found / ambiguous rather than guessing.
+3. The NL query route (FR11/FR13/FR14–FR19) first classifies intent via `src/nlquery/`. Matching closed templates dispatch to the *same* FR1–FR10 query templates and `TemplateAnswerGenerator`. Unmatched questions: if Graph RAG is disabled, return FR13's explicit non-answer; if enabled, run open-ended subgraph retrieval then `LLMAnswerGenerator` (`ADR-0005`); if Hybrid Doc RAG is also enabled, fuse top-k document chunks from `src/retrieval/` (`ADR-0006`). Entity resolution failures still return not-found / ambiguous rather than guessing.
 4. FastAPI renders the result via a Jinja2 partial, returned to HTMX for in-place DOM swap. Subgraph results additionally emit Cytoscape.js-ready JSON for client-side rendering (FR5).
-5. Every rendered answer includes its evidence (source system(s), relationship types, and — for paths — the full path) per FR12, sourced from the same query/retrieval result, never re-derived separately.
+5. Every rendered answer includes its evidence (source system(s), relationship types, document chunk ids when cited, and — for paths — the full path) per FR12/FR19, sourced from the same query/retrieval result, never re-derived separately.
 
 ## Extension points
 

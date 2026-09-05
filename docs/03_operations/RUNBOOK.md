@@ -84,6 +84,28 @@ OPENAI_API_KEY=sk-...
 
 Or set the same variables in the shell. If Graph RAG is enabled without `OPENAI_API_KEY`, Ask returns a clear configuration non-answer instead of calling the network.
 
+### Hybrid Doc RAG (MVP3)
+
+After regenerating and ingesting architecture docs, build the local vector index:
+
+```bash
+python -m src.datagen.generate
+python -m src.ingestion.run
+python -m src.retrieval.index_docs
+```
+
+Then enable fusion (requires Graph RAG + API key for live embeds/generation):
+
+```
+GRAPH_RAG_ENABLED=true
+HYBRID_DOC_RAG_ENABLED=true
+OPENAI_API_KEY=sk-...
+# OPENAI_EMBEDDING_MODEL=text-embedding-3-small
+# VECTOR_STORE_PATH=data/vectors/chunks.sqlite3
+```
+
+Vectors live under `data/vectors/` (SQLite). Re-run `index_docs` whenever docs change.
+
 ### Tests
 
 ```bash
@@ -112,6 +134,8 @@ None for MVP1. NL query requests are logged as structured JSON lines to a local 
 | Check graph data quality | `python -m src.quality.run` |
 | Reset the graph store | `docker-compose down -v && docker-compose up -d neo4j` |
 | Enable open-ended Graph RAG Ask | Set `GRAPH_RAG_ENABLED=true` and `OPENAI_API_KEY` in `.env` (or the shell) |
+| Index architecture docs for Hybrid Ask | `python -m src.retrieval.index_docs` (after datagen + ingestion) |
+| Enable Hybrid Graph + Document RAG | Set `HYBRID_DOC_RAG_ENABLED=true` (requires Graph RAG + API key) |
 
 ## Incidents
 

@@ -1,5 +1,6 @@
-"""Writes the 5 MVP1 synthetic source files to `data/sample/` from the
-hand-authored scenario in `src/datagen/scenario.py`.
+"""Writes the synthetic Meridian source files to `data/sample/` from the
+hand-authored scenario in `src/datagen/scenario.py` (plus MVP3 architecture
+docs under `data/sample/docs/`).
 
 Run: `python -m src.datagen.generate`
 
@@ -14,9 +15,10 @@ import csv
 import json
 from pathlib import Path
 
-from src.datagen import scenario
+from src.datagen import architecture_docs, scenario
 
 OUTPUT_DIR = Path("data/sample")
+DOCS_DIR = OUTPUT_DIR / "docs"
 
 CMDB_FIELDNAMES = [
     "record_id",
@@ -96,6 +98,33 @@ def write_integration_catalog() -> Path:
     return path
 
 
+def _render_doc(doc: architecture_docs.ArchDoc) -> str:
+    related_lines = []
+    for rel in doc["related_entities"]:
+        related_lines.append(f"  - type: {rel['type']}")
+        related_lines.append(f"    name: {rel['name']}")
+    related_block = "\n".join(related_lines)
+    return (
+        "---\n"
+        f"slug: {doc['slug']}\n"
+        f"title: {doc['title']}\n"
+        "related_entities:\n"
+        f"{related_block}\n"
+        "---\n"
+        f"{doc['body'].rstrip()}\n"
+    )
+
+
+def write_architecture_docs() -> list[Path]:
+    DOCS_DIR.mkdir(parents=True, exist_ok=True)
+    paths: list[Path] = []
+    for doc in architecture_docs.ARCHITECTURE_DOCS:
+        path = DOCS_DIR / f"{doc['slug']}.md"
+        path.write_text(_render_doc(doc), encoding="utf-8")
+        paths.append(path)
+    return paths
+
+
 def generate_all() -> list[Path]:
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     return [
@@ -104,6 +133,7 @@ def generate_all() -> list[Path]:
         write_db_metadata(),
         write_team_ownership(),
         write_integration_catalog(),
+        *write_architecture_docs(),
     ]
 
 

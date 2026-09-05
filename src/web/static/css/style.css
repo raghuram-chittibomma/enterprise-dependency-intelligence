@@ -572,6 +572,13 @@ body {
   text-decoration: underline;
 }
 
+.ask-doc-excerpt {
+  flex-basis: 100%;
+  font-size: 0.85rem;
+  color: var(--color-muted, #555);
+  margin-top: 0.15rem;
+}
+
 .dependency-meta {
   display: flex;
   align-items: center;

@@ -408,7 +408,9 @@ class TestAskGoldenQuestions:
 
 
 class TestAskNonAnswers:
-    def test_unsupported_question(self) -> None:
+    def test_unsupported_question(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.delenv("GRAPH_RAG_ENABLED", raising=False)
+        monkeypatch.delenv("HYBRID_DOC_RAG_ENABLED", raising=False)
         answer = ask(_seed_nl_scenario(), "Why does Storefront call Customer API v1?")
         assert answer.status == "unsupported"
         assert answer.evidence == []

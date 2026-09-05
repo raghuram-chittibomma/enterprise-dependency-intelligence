@@ -19,7 +19,6 @@ Large enterprises operate hundreds of applications, APIs, services, databases, p
 ## Non-goals (for MVP1)
 
 - No LLM call anywhere in the MVP1 critical path.
-- No unstructured document ingestion or vector search (deferred to MVP3).
 - No agentic/multi-step investigation (deferred to MVP4).
 - No authentication, multi-tenancy, or cloud deployment.
 - No table-level graph nodes, or Technology/Environment as graph nodes (kept as properties — see `docs/01_architecture/DATA_MODEL.md`).

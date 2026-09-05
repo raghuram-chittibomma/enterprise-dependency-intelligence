@@ -1,9 +1,9 @@
-"""MVP2 LLM-backed grounded answer generation (`ADR-0005`).
+"""MVP2/MVP3 LLM-backed grounded answer generation (`ADR-0005`, `ADR-0006`).
 
 `LLMAnswerGenerator` consumes an open-ended `RetrievalResult` (subgraph
-already retrieved — no Text2Cypher) and asks OpenAI to answer using only
-those edges. Citations are filtered to the retrieved set (FR15); anything
-else becomes `insufficient_evidence` (FR16).
+already retrieved — no Text2Cypher; optionally fused with doc chunks) and
+asks OpenAI to answer using only that evidence. Citations are filtered to
+the retrieved set (FR15/FR19); anything else becomes `insufficient_evidence`.
 """
 
 from __future__ import annotations
@@ -13,9 +13,10 @@ import re
 from dataclasses import dataclass
 from typing import Protocol
 
-from src.nlquery.answering import AnswerResult, EvidenceEdge
+from src.nlquery.answering import AnswerResult, EvidenceDocChunk, EvidenceEdge
 from src.nlquery.config import openai_api_key, openai_model
 from src.nlquery.engine import RetrievalResult, SubgraphEdge
+from src.retrieval.vector_store import RetrievedChunk
 
 INSUFFICIENT_EVIDENCE_TEXT = (
     "Insufficient evidence in the retrieved dependency subgraph to answer "
@@ -29,14 +30,19 @@ MISSING_API_KEY_TEXT = (
 )
 
 SYSTEM_PROMPT = """You answer enterprise dependency questions using ONLY the
-provided graph subgraph. Rules:
-1. Only assert relationships that appear in the subgraph edges list.
-2. If the subgraph does not contain enough evidence, set status to
+provided evidence (graph subgraph edges and optional document chunks). Rules:
+1. Only assert relationships that appear in the subgraph edges list, and/or
+   facts that appear in the document_chunks list.
+2. If neither source contains enough evidence, set status to
    "insufficient_evidence" and explain briefly.
 3. Reply with a single JSON object (no markdown fences) of the form:
-{"status":"answered"|"insufficient_evidence","text":"...","citations":[{"source_id":"...","target_id":"...","rel_type":"..."}]}
-4. Every citation must match an edge in the subgraph exactly (source_id,
-   target_id, rel_type). Prefer fewer, precise citations.
+{"status":"answered"|"insufficient_evidence","text":"...","citations":[{"source_id":"...","target_id":"...","rel_type":"..."}],"doc_citations":[{"document_id":"...","chunk_id":"..."}]}
+4. Every graph citation must match an edge exactly (source_id, target_id,
+   rel_type). Every doc citation must match a retrieved chunk exactly
+   (document_id, chunk_id). Prefer fewer, precise citations.
+5. You may omit citations arrays that are empty, but an "answered" response
+   must include at least one valid graph or doc citation when evidence was
+   provided.
 """
 
 
@@ -73,9 +79,14 @@ def _edge_key(source_id: str, target_id: str, rel_type: str) -> tuple[str, str, 
     return (source_id, target_id, rel_type)
 
 
-def _serialize_subgraph(retrieval: RetrievalResult) -> str:
+def _chunk_key(document_id: str, chunk_id: str) -> tuple[str, str]:
+    return (document_id, chunk_id)
+
+
+def _serialize_context(retrieval: RetrievalResult) -> str:
     nodes = retrieval.open_subgraph_nodes or []
     edges = retrieval.open_subgraph_edges or []
+    docs = retrieval.doc_chunks or []
     payload = {
         "seed_entities": [
             {"id": e.id, "label": e.label, "name": e.name}
@@ -95,8 +106,17 @@ def _serialize_subgraph(retrieval: RetrievalResult) -> str:
             }
             for e in edges
         ],
+        "document_chunks": [
+            {
+                "document_id": c.document_id,
+                "document_name": c.document_name,
+                "chunk_id": c.chunk_id,
+                "text": c.text,
+                "source_system": c.source_system,
+            }
+            for c in docs
+        ],
     }
-    # Deduplicate seeds that appear as both entity and seed_N.
     seen: set[str] = set()
     unique_seeds = []
     for item in payload["seed_entities"]:
@@ -149,8 +169,39 @@ def _evidence_from_citations(
     return evidence
 
 
+def _doc_evidence_from_citations(
+    citations: list[dict], chunk_by_key: dict[tuple[str, str], RetrievedChunk]
+) -> list[EvidenceDocChunk]:
+    evidence: list[EvidenceDocChunk] = []
+    seen: set[tuple[str, str]] = set()
+    for citation in citations:
+        try:
+            key = _chunk_key(citation["document_id"], citation["chunk_id"])
+        except (KeyError, TypeError):
+            continue
+        chunk = chunk_by_key.get(key)
+        if chunk is None or key in seen:
+            continue
+        seen.add(key)
+        evidence.append(
+            EvidenceDocChunk(
+                document_id=chunk.document_id,
+                document_name=chunk.document_name,
+                chunk_id=chunk.chunk_id,
+                text=chunk.text,
+                source_system=chunk.source_system,
+                source_record_id=chunk.source_record_id,
+            )
+        )
+    return evidence
+
+
+def _resolved_entities(retrieval: RetrievalResult) -> list:
+    return list({e.id: e for e in (retrieval.resolved or {}).values()}.values())
+
+
 class LLMAnswerGenerator:
-    """OpenAI-backed AnswerGenerator for open-ended Graph RAG retrievals."""
+    """OpenAI-backed AnswerGenerator for open-ended Graph / Hybrid RAG."""
 
     def __init__(self, client: ChatClient | None = None) -> None:
         self._client = client
@@ -192,11 +243,11 @@ class LLMAnswerGenerator:
             )
 
         edges = retrieval.open_subgraph_edges or []
-        edge_by_key = {
-            _edge_key(e.source_id, e.target_id, e.rel_type): e for e in edges
-        }
+        docs: list[RetrievedChunk] = list(retrieval.doc_chunks or [])
+        edge_by_key = {_edge_key(e.source_id, e.target_id, e.rel_type): e for e in edges}
+        chunk_by_key = {_chunk_key(c.document_id, c.chunk_id): c for c in docs}
         user_prompt = (
-            f"Question: {retrieval.question}\n\nSubgraph JSON:\n{_serialize_subgraph(retrieval)}"
+            f"Question: {retrieval.question}\n\nEvidence JSON:\n{_serialize_context(retrieval)}"
         )
         try:
             raw = client.complete(system=SYSTEM_PROMPT, user=user_prompt)
@@ -214,19 +265,25 @@ class LLMAnswerGenerator:
         status = parsed.get("status", "insufficient_evidence")
         text = str(parsed.get("text") or "").strip() or INSUFFICIENT_EVIDENCE_TEXT
         citations = parsed.get("citations") or []
+        doc_citations = parsed.get("doc_citations") or []
         if not isinstance(citations, list):
             citations = []
+        if not isinstance(doc_citations, list):
+            doc_citations = []
         evidence = _evidence_from_citations(citations, edge_by_key)
+        doc_evidence = _doc_evidence_from_citations(doc_citations, chunk_by_key)
+        has_any_evidence = bool(evidence) or bool(doc_evidence)
+        has_retrieval = bool(edges) or bool(docs)
 
-        # Faithfulness gate (FR15/FR16): answered requires at least one valid
-        # in-subgraph citation when the subgraph had edges; otherwise refuse.
-        if status == "answered" and edges and not evidence:
+        # Faithfulness gate (FR15/FR16/FR19): answered requires at least one
+        # valid citation from the fused retrieval when evidence was available.
+        if status == "answered" and has_retrieval and not has_any_evidence:
             return AnswerResult(
                 retrieval.question,
                 "insufficient_evidence",
                 "open_ended",
                 INSUFFICIENT_EVIDENCE_TEXT,
-                list({e.id: e for e in (retrieval.resolved or {}).values()}.values()),
+                _resolved_entities(retrieval),
                 [],
             )
         if status != "answered":
@@ -235,11 +292,17 @@ class LLMAnswerGenerator:
                 "insufficient_evidence",
                 "open_ended",
                 text if text else INSUFFICIENT_EVIDENCE_TEXT,
-                list({e.id: e for e in (retrieval.resolved or {}).values()}.values()),
+                _resolved_entities(retrieval),
                 evidence,
+                doc_evidence,
             )
 
-        resolved = list({e.id: e for e in (retrieval.resolved or {}).values()}.values())
         return AnswerResult(
-            retrieval.question, "answered", "open_ended", text, resolved, evidence
+            retrieval.question,
+            "answered",
+            "open_ended",
+            text,
+            _resolved_entities(retrieval),
+            evidence,
+            doc_evidence,
         )

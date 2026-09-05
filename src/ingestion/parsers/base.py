@@ -1,4 +1,4 @@
-"""Shared shapes for the 5 `SourceParser` implementations (the
+"""Shared shapes for the `SourceParser` implementations (the
 `source_parser` extension point, `docs/01_architecture/ARCHITECTURE.md`).
 
 Each parser module exposes `read(path)` (file -> raw rows) and two pure
@@ -14,7 +14,7 @@ from dataclasses import dataclass
 
 from src.ontology.relationships import RelationshipBase
 
-# The "type" strings used throughout the 5 source files map 1:1 to node labels.
+# The "type" strings used throughout the source files map 1:1 to node labels.
 TYPE_TO_LABEL: dict[str, str] = {
     "application": "Application",
     "service": "Service",
@@ -25,6 +25,7 @@ TYPE_TO_LABEL: dict[str, str] = {
     "external_system": "ExternalSystem",
     "team": "Team",
     "business_capability": "BusinessCapability",
+    "document": "Document",
 }
 
 

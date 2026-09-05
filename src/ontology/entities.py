@@ -1,4 +1,4 @@
-"""The 9 node types. See `docs/01_architecture/DATA_MODEL.md` for the ontology
+"""The 10 node types. See `docs/01_architecture/DATA_MODEL.md` for the ontology
 rationale and `docs/01_architecture/DECISIONS/ADR-0003-provenance-model.md` for
 why every node carries provenance fields.
 """
@@ -86,6 +86,13 @@ class Team(NodeBase):
     business_area: str = Field(min_length=1)
 
 
+class Document(NodeBase):
+    """Unstructured architecture / design note (MVP3 Hybrid Doc RAG)."""
+
+    path: str = Field(min_length=1)
+    doc_type: str = Field(default="architecture_note", min_length=1)
+
+
 # Node types that may participate as the source of an OWNED_BY relationship
 # (i.e. every entity type) — defined here, next to the entity classes
 # themselves, and re-exported via registry.py for relationship validation.
@@ -99,4 +106,5 @@ ALL_ENTITY_TYPES: tuple[type[NodeBase], ...] = (
     ExternalSystem,
     Team,
     BusinessCapability,
+    Document,
 )

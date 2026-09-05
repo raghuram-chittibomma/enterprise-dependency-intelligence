@@ -1,6 +1,6 @@
 """The Enterprise Dependency Intelligence ontology.
 
-9 node types + 7 relationship types, per `docs/01_architecture/DATA_MODEL.md`.
+10 node types + 8 relationship types, per `docs/01_architecture/DATA_MODEL.md`.
 This package is the single source of truth for the shape of the graph — the
 ingestion pipeline, query layer, and NL query layer all build on these models
 rather than each defining their own notion of what an "Application" is.
@@ -12,6 +12,7 @@ from src.ontology.entities import (
     BusinessCapability,
     Database,
     DataPipeline,
+    Document,
     ExternalSystem,
     NodeBase,
     Report,
@@ -21,6 +22,7 @@ from src.ontology.entities import (
 from src.ontology.registry import NODE_TYPES, RELATIONSHIP_TYPES
 from src.ontology.relationships import (
     Consumes,
+    DocumentedBy,
     IntegratesWith,
     OwnedBy,
     ReadsFrom,
@@ -41,6 +43,8 @@ __all__ = [
     "Criticality",
     "Database",
     "DataPipeline",
+    "Document",
+    "DocumentedBy",
     "EvidenceType",
     "ExternalSystem",
     "IntegratesWith",

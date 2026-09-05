@@ -57,6 +57,14 @@ Each FR is traceable to an increment todo (this project tracks delivery via the 
 | FR15 | Open-ended answers cite only relationships present in the retrieved subgraph (faithfulness), with FR12 evidence. | increment-18-llm / increment-20-evals |
 | FR16 | Refuse with "insufficient evidence" when the retrieved subgraph cannot support an answer — never fabricate. | increment-18-llm |
 
+## Functional requirements (MVP3 — Hybrid Graph + Document RAG)
+
+| ID | Requirement | Increment |
+|----|-------------|-----------|
+| FR17 | Ingest synthetic architecture `Document` nodes linked to entities via `DOCUMENTED_BY`, with ADR-0003 provenance. | increment-22-ontology-datagen |
+| FR18 | Index document chunks into a local vector store and, when Hybrid Doc RAG is enabled, retrieve top-k passages alongside the MVP2 subgraph for open-ended Ask. | increment-23-vector-index / increment-24-hybrid-ask |
+| FR19 | Open-ended answers may cite graph edges and/or document chunk ids present in the fused retrieval; refuse when neither supports the claim (extends FR15/FR16). | increment-24-hybrid-ask / increment-25-evals |
+
 ### The 7 supported natural-language questions (FR11/FR13 closed template set)
 
 1. What applications/services directly consume Customer API v1?
@@ -67,14 +75,14 @@ Each FR is traceable to an increment todo (this project tracks delivery via the 
 6. Which APIs are consumed by Order Management?
 7. What applications use Customer Database?
 
-Any question outside this set (or referencing an unresolvable entity) returns an explicit "not supported" / "entity not found" response (FR13) when Graph RAG is off. When `GRAPH_RAG_ENABLED=true`, out-of-template questions follow the MVP2 Graph RAG path (`ADR-0005`) instead of FR13's fixed unsupported text — still refusing when evidence is insufficient (FR16).
+Any question outside this set (or referencing an unresolvable entity) returns an explicit "not supported" / "entity not found" response (FR13) when Graph RAG is off. When `GRAPH_RAG_ENABLED=true`, out-of-template questions follow the MVP2 Graph RAG path (`ADR-0005`); when `HYBRID_DOC_RAG_ENABLED=true` as well, MVP3 fuses top-k document chunks with that subgraph (`ADR-0006`, FR17–FR19) — still refusing when evidence is insufficient (FR16/FR19).
 
 ## Non-functional requirements
 
 | Category | Requirement |
 |---|---|
-| AI boundary | Zero LLM calls on MVP1 structured paths (FR1–FR10) and the closed 7-question NL templates (FR11). MVP2 allows an LLM **only** on the open-ended Ask path behind `answer_generator` (`ADR-0005`), gated by `GRAPH_RAG_ENABLED`. |
-| Correctness | No fabricated relationships. Closed NL answers remain enumerable; open-ended answers may only assert edges in the retrieved subgraph (FR15/FR16). |
+| AI boundary | Zero LLM calls on MVP1 structured paths (FR1–FR10) and the closed 7-question NL templates (FR11). MVP2/MVP3 allow an LLM **only** on the open-ended Ask path behind `answer_generator` (`ADR-0005`/`ADR-0006`), gated by `GRAPH_RAG_ENABLED` (+ `HYBRID_DOC_RAG_ENABLED` for doc fusion). |
+| Correctness | No fabricated relationships or doc claims. Closed NL answers remain enumerable; open-ended answers may only assert retrieved subgraph edges and/or retrieved doc chunks (FR15/FR16/FR19). |
 | Performance | Sub-second response for traversals up to depth 4 over the ~150–250 node / synthetic-scale MVP1 graph. |
 | Idempotency | Ingestion is safe to re-run: re-running the pipeline twice produces zero duplicate nodes/relationships (`MERGE` on natural key). |
 | Provenance | Every node and relationship carries `source_system`, `source_record_id`, and (relationships only) `evidence_type` (`documented` \| `inferred`). MVP1 sources only ever write `documented`. |
@@ -98,16 +106,16 @@ Any question outside this set (or referencing an unresolvable entity) returns an
 - **Evidence / provenance** — the source system, source record, and (for relationships) documented-vs-inferred status backing a fact in the graph; every UI answer must be traceable to evidence (FR12).
 - **Golden question** — one of the 7 fixed NL question templates (or the corresponding golden-dataset scenario) used to evaluate the NL query layer.
 
-## Out of scope (MVP1 / still deferred past MVP2)
+## Out of scope (still deferred past MVP3)
 
-- Unstructured document ingestion, vector search, or the `Document` entity (deferred to MVP3 — Hybrid Graph + Document RAG).
 - Multi-step agentic investigation (deferred to MVP4).
 - Rewriting the 7 closed MVP1 answers with an LLM (rejected in `ADR-0005`).
 - Free Text2Cypher as the primary open-ended retrieval path (rejected in MVP2 v1; see `ADR-0005`).
+- Real Confluence/SharePoint connectors or Neo4j-native vector indexes (MVP3 v1 uses synthetic Meridian docs + local SQLite vectors; see `ADR-0006`).
 - Risk scoring, drift detection, what-if analysis, technology rationalization reporting (deferred to MVP5).
 - Authentication, authorization, multi-tenancy, cloud deployment.
 - `Table` as a graph node (databases carry a `key_tables` property list instead).
 - `Technology` and `Environment` as graph nodes (kept as properties on `Application`/`Service`).
 - `Owner` as a separate node type (folded into `Team` + `OWNED_BY`).
-- Open-ended free-form NL outside the 7 templates when Graph RAG is **disabled** still returns FR13's explicit non-answer; when enabled, open-ended Ask is in scope for MVP2 (`ADR-0005`, FR14–FR16) but must refuse without fabricating.
+- Open-ended free-form NL outside the 7 templates when Graph RAG is **disabled** still returns FR13's explicit non-answer; when enabled, open-ended Ask is in scope for MVP2/MVP3 (`ADR-0005`/`ADR-0006`, FR14–FR19) but must refuse without fabricating.
 - Cardinality enforcement beyond what's documented in `docs/01_architecture/DATA_MODEL.md` (e.g. co-ownership by multiple teams) — MVP1 assumes single ownership; revisit via ADR if real scenarios need otherwise.

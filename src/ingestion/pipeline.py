@@ -1,8 +1,8 @@
-"""Orchestrates the 5 parsers into a single idempotent ingestion run
-(increment-4). Two global phases -- all nodes, then all relationships --
-which is what actually guarantees no forward-reference ever fails to
-resolve, regardless of row order within (or even between) source files: by
-the time phase 2 starts, every node from every source already exists.
+"""Orchestrates the source parsers into a single idempotent ingestion run
+(increment-4 / MVP3 docs). Two global phases -- all nodes, then all
+relationships -- which is what actually guarantees no forward-reference ever
+fails to resolve, regardless of row order within (or even between) source
+files: by the time phase 2 starts, every node from every source already exists.
 """
 
 from __future__ import annotations
@@ -14,6 +14,7 @@ from pathlib import Path
 from src.graph.store import GraphStore
 from src.ingestion.parsers import (
     api_catalog,
+    architecture_docs,
     cmdb,
     db_metadata,
     integration_catalog,
@@ -39,6 +40,7 @@ def _read_all(data_dir: Path) -> dict[str, list]:
         "db_metadata": db_metadata.read(data_dir / "db_metadata.json"),
         "team_ownership": team_ownership.read(data_dir / "team_ownership.json"),
         "integration_catalog": integration_catalog.read(data_dir / "integration_catalog.csv"),
+        "architecture_docs": architecture_docs.read(data_dir / "docs"),
     }
 
 
@@ -50,13 +52,15 @@ def run_ingestion(
     resolver = EntityResolver()
     rows = _read_all(data_dir)
 
-    # Phase 1: nodes.
+    # Phase 1: nodes (docs last so related entities already exist for resolution
+    # registration; relationships still run in a separate phase).
     all_nodes = [
         *cmdb.build_nodes(rows["cmdb"], resolver),
         *api_catalog.build_nodes(rows["api_catalog"], resolver),
         *db_metadata.build_nodes(rows["db_metadata"], resolver),
         *team_ownership.build_nodes(rows["team_ownership"], resolver),
         *integration_catalog.build_nodes(rows["integration_catalog"], resolver),
+        *architecture_docs.build_nodes(rows["architecture_docs"], resolver),
     ]
     for node in all_nodes:
         store.upsert_node(type(node).label(), node)
@@ -70,6 +74,7 @@ def run_ingestion(
         *db_metadata.build_relationships(rows["db_metadata"], resolver),
         *team_ownership.build_relationships(rows["team_ownership"], resolver),
         *integration_catalog.build_relationships(rows["integration_catalog"], resolver),
+        *architecture_docs.build_relationships(rows["architecture_docs"], resolver),
     ]
     for parsed in all_relationships:
         store.upsert_relationship(

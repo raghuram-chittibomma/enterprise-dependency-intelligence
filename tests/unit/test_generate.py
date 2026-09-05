@@ -11,16 +11,20 @@ import json
 from src.datagen import generate
 
 
-def test_generate_all_writes_5_files(tmp_path, monkeypatch) -> None:
+def test_generate_all_writes_catalog_files_and_docs(tmp_path, monkeypatch) -> None:
     monkeypatch.setattr(generate, "OUTPUT_DIR", tmp_path)
+    monkeypatch.setattr(generate, "DOCS_DIR", tmp_path / "docs")
     paths = generate.generate_all()
-    assert {p.name for p in paths} == {
+    names = {p.name for p in paths}
+    assert {
         "cmdb.csv",
         "api_catalog.json",
         "db_metadata.json",
         "team_ownership.json",
         "integration_catalog.csv",
-    }
+    }.issubset(names)
+    assert any(p.parent.name == "docs" and p.suffix == ".md" for p in paths)
+    assert len([p for p in paths if p.suffix == ".md"]) >= 8
     for path in paths:
         assert path.exists()
         assert path.stat().st_size > 0
@@ -28,8 +32,9 @@ def test_generate_all_writes_5_files(tmp_path, monkeypatch) -> None:
 
 def test_regenerating_is_byte_for_byte_idempotent(tmp_path, monkeypatch) -> None:
     monkeypatch.setattr(generate, "OUTPUT_DIR", tmp_path)
-    first_run = {p.name: p.read_bytes() for p in generate.generate_all()}
-    second_run = {p.name: p.read_bytes() for p in generate.generate_all()}
+    monkeypatch.setattr(generate, "DOCS_DIR", tmp_path / "docs")
+    first_run = {str(p.relative_to(tmp_path)): p.read_bytes() for p in generate.generate_all()}
+    second_run = {str(p.relative_to(tmp_path)): p.read_bytes() for p in generate.generate_all()}
     assert first_run == second_run
 
 

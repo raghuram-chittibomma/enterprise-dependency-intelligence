@@ -16,11 +16,11 @@ from src.graph.fallback_store import FallbackGraphStore
 from src.ingestion.pipeline import run_ingestion
 
 # 8 apps + 5 services + 6 APIs + 6 DBs + 3 pipelines + 2 reports + 5 teams
-# + 4 external systems + 6 capabilities
-EXPECTED_NODE_COUNT = 45
+# + 4 external systems + 6 capabilities + 10 architecture documents
+EXPECTED_NODE_COUNT = 55
 # 21 CONSUMES + 16 READS_FROM + 9 WRITES_TO + 5 INTEGRATES_WITH + 19 SUPPORTS
-# + 30 OWNED_BY + 1 REPLACED_BY
-EXPECTED_RELATIONSHIP_COUNT = 101
+# + 30 OWNED_BY + 1 REPLACED_BY + 30 DOCUMENTED_BY
+EXPECTED_RELATIONSHIP_COUNT = 131
 
 
 def _ingest_into_fresh_fallback_store(tmp_path):
@@ -28,11 +28,14 @@ def _ingest_into_fresh_fallback_store(tmp_path):
     import src.datagen.generate as gen_module
 
     original_output_dir = gen_module.OUTPUT_DIR
+    original_docs_dir = gen_module.DOCS_DIR
     gen_module.OUTPUT_DIR = data_dir
+    gen_module.DOCS_DIR = data_dir / "docs"
     try:
         generate.generate_all()
     finally:
         gen_module.OUTPUT_DIR = original_output_dir
+        gen_module.DOCS_DIR = original_docs_dir
 
     store = FallbackGraphStore()
     result = run_ingestion(
@@ -64,6 +67,7 @@ class TestIngestionPipeline:
         assert store.count_nodes(label="Team") == 5
         assert store.count_nodes(label="ExternalSystem") == 4
         assert store.count_nodes(label="BusinessCapability") == 6
+        assert store.count_nodes(label="Document") == 10
 
         assert store.count_relationships(rel_type="CONSUMES") == 21
         assert store.count_relationships(rel_type="READS_FROM") == 16
@@ -72,6 +76,7 @@ class TestIngestionPipeline:
         assert store.count_relationships(rel_type="SUPPORTS") == 19
         assert store.count_relationships(rel_type="OWNED_BY") == 30
         assert store.count_relationships(rel_type="REPLACED_BY") == 1
+        assert store.count_relationships(rel_type="DOCUMENTED_BY") == 30
 
     def test_reingesting_is_idempotent(self, tmp_path) -> None:
         store, first = _ingest_into_fresh_fallback_store(tmp_path)
