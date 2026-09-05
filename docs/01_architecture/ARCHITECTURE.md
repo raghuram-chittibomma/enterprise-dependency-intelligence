@@ -8,6 +8,8 @@ Read by: Solution Architect Agent, Refactor Reviewer Agent, Code Reviewer Agent,
 
 MVP1 is a single-process, local-first application: synthetic source files are ingested into a Neo4j graph, and a FastAPI + server-rendered UI answers dependency questions by running parameterized Cypher against that graph. There is no LLM anywhere in this diagram — every box is deterministic code.
 
+**Detailed Mermaid diagrams** (system context, components, ingestion, request path, Ask, Investigate, Intelligence, evidence): [`diagrams/`](diagrams/).
+
 ```mermaid
 flowchart LR
     subgraph Sources["data/sample/ (5 synthetic sources)"]

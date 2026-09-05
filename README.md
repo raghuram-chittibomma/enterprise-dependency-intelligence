@@ -67,6 +67,40 @@ The current product covers search through advanced intelligence (MVP1–MVP5). C
 
 ---
 
+## Product tour
+
+Screenshots from the Meridian demo UI. Full set: [`docs/media/screenshots/`](docs/media/screenshots/).
+
+### Search & Ask
+
+Find any system by name, then ask a dependency question. Closed templates answer from the graph with expandable evidence.
+
+![Search & Ask home](docs/media/screenshots/01-search-home.png)
+
+![Ask answer with evidence](docs/media/screenshots/03-ask-with-evidence.png)
+
+### Entity risk, what-if, and graph
+
+Open an entity for provenance-backed detail, a deterministic **change risk** score, a read-only **retirement what-if**, and an interactive multi-hop **dependency graph**.
+
+![Entity detail — risk and what-if](docs/media/screenshots/04-entity-detail.png)
+
+![Interactive dependency graph](docs/media/screenshots/05-dependency-graph.png)
+
+### Investigate
+
+For multi-step change-impact questions, Investigate gathers a required evidence skeleton, runs allowlisted tools, and returns a cited report plus step trace.
+
+![Investigate report with citations](docs/media/screenshots/06-investigate.png)
+
+### Landscape intelligence
+
+Portfolio views for **technology rationalization** (and drift checks). Risk/what-if also appear on every entity page from Search.
+
+![Technology rationalization](docs/media/screenshots/09-rationalize.png)
+
+---
+
 ## Architecture
 
 Local-first stack: generate/ingest catalogs into Neo4j, then serve FastAPI + server-rendered UI. Query templates are shared by the explorer, closed Ask, and higher layers.
@@ -132,7 +166,13 @@ flowchart LR
 3. **Same graph for every milestone** — MVP2–5 extend retrieval and UI without rebuilding the ontology.
 4. **ADRs for decisions** — store choice, resolution, provenance, NL boundary, RAG, Investigate, intelligence, reconciliation live under `docs/01_architecture/DECISIONS/`.
 
-Deeper detail: [`docs/01_architecture/ARCHITECTURE.md`](docs/01_architecture/ARCHITECTURE.md) and [`docs/01_architecture/DATA_MODEL.md`](docs/01_architecture/DATA_MODEL.md).
+### Detailed diagrams
+
+Step-by-step Mermaid diagrams (system context, components, ingestion, request path, Ask decision, Investigate, Intelligence, evidence):
+
+**[`docs/01_architecture/diagrams/`](docs/01_architecture/diagrams/)**
+
+Narrative architecture: [`docs/01_architecture/ARCHITECTURE.md`](docs/01_architecture/ARCHITECTURE.md) · data model: [`docs/01_architecture/DATA_MODEL.md`](docs/01_architecture/DATA_MODEL.md).
 
 ---
 
@@ -172,12 +212,15 @@ Each milestone kept prior surfaces working; optional AI features are flag-gated.
 ## Repository layout
 
 ```
-src/          Runtime application (datagen, ingestion, graph, nlquery, investigate, intelligence, api, web)
-tests/        Unit and integration tests
-evals/        Golden / faithfulness evaluation scenarios
-data/sample/  Generated synthetic Meridian datasets (regenerable)
-docs/         Charter, product brief, architecture, ADRs, test strategy, runbook, release notes
-AGENTS.md     Rules for AI coding agents working in this repo
+src/                              Runtime application
+tests/ · evals/                   Tests and golden scenarios
+data/sample/                      Generated Meridian datasets
+docs/00_project/                  Charter, product brief
+docs/01_architecture/             Architecture, data model, ADRs
+docs/01_architecture/diagrams/    Detailed architecture & flow diagrams
+docs/media/screenshots/           UI screenshots for README / demos
+docs/02_testing/ · 03_operations/ Test strategy, runbook, release notes
+AGENTS.md                         Rules for AI coding agents
 ```
 
 ---
@@ -207,5 +250,7 @@ Copy `.env.example` → `.env` for graph connection and optional feature flags (
 | [`docs/00_project/PROJECT_CHARTER.md`](docs/00_project/PROJECT_CHARTER.md) | Problem, goals, constraints |
 | [`docs/00_project/PRODUCT_BRIEF.md`](docs/00_project/PRODUCT_BRIEF.md) | Personas, FRs, out of scope |
 | [`docs/01_architecture/ARCHITECTURE.md`](docs/01_architecture/ARCHITECTURE.md) | Components and request flow |
+| [`docs/01_architecture/diagrams/`](docs/01_architecture/diagrams/) | Detailed architecture & flow diagrams |
+| [`docs/media/screenshots/`](docs/media/screenshots/) | UI screenshots |
 | [`docs/01_architecture/DECISIONS/`](docs/01_architecture/DECISIONS/) | Architecture Decision Records |
 | [`docs/03_operations/RELEASE_NOTES.md`](docs/03_operations/RELEASE_NOTES.md) | What shipped per milestone |
