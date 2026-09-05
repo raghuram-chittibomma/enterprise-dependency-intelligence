@@ -4,7 +4,7 @@
 
 {% block head_extra %}
 <script src="https://unpkg.com/cytoscape@3.30.2/dist/cytoscape.min.js" defer></script>
-<script src="{{ url_for('static', path='js/graph.js') }}" defer></script>
+<script src="{{ url_for('static', path='js/graph.js') }}?v=graph2" defer></script>
 {% endblock %}
 
 {% block content %}
@@ -194,10 +194,18 @@
       <option value="5">5 hops</option>
     </select>
   </div>
-  <div id="dependency-graph" class="dependency-graph-canvas"></div>
-  <p id="graph-empty-message" class="entity-metadata-empty" hidden>
-    No dependencies found in that direction.
-  </p>
+  <div id="dependency-graph-shell" class="dependency-graph-shell">
+    <div class="graph-viewport-controls" role="toolbar" aria-label="Graph viewport">
+      <button type="button" class="graph-tool-btn" data-graph-action="zoom-out" title="Zoom out">−</button>
+      <button type="button" class="graph-tool-btn" data-graph-action="zoom-in" title="Zoom in">+</button>
+      <button type="button" class="graph-tool-btn" data-graph-action="fit" title="Fit to view">Fit</button>
+      <button type="button" class="graph-tool-btn" data-graph-action="fullscreen" aria-pressed="false" title="Open full page">Full page</button>
+    </div>
+    <div id="dependency-graph" class="dependency-graph-canvas"></div>
+    <p id="graph-empty-message" class="entity-metadata-empty" hidden>
+      No dependencies found in that direction.
+    </p>
+  </div>
 </section>
 
 <section class="dependency-section">
