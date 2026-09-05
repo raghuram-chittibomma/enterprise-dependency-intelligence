@@ -60,7 +60,7 @@ python -m src.graph.healthcheck
 python -m venv .venv
 .venv\Scripts\Activate.ps1          # Windows PowerShell
 pip install -r requirements.txt
-pip install -e ../enterprise-sdlc-mcp   # build-time MCP server, editable install into this project's venv
+copy .env.example .env              # then edit .env (OPENAI_API_KEY, etc.)
 
 python -m src.datagen.generate          # (re)generate the synthetic Meridian Retail Group dataset -> data/sample/
 python -m src.ingestion.run             # idempotent ingestion into the graph store
@@ -68,7 +68,21 @@ python -m src.quality.run               # data-quality invariants against the in
 uvicorn src.api.main:app --reload       # run the app -> http://127.0.0.1:8000
 ```
 
-*(Exact module paths above are the target shape from `docs/01_architecture/ARCHITECTURE.md`; update this section if an increment lands with a different entry-point name.)*
+Environment variables are read from the project-root `.env` via `python-dotenv`
+(`src/env_loader.py`). Process env vars still override `.env`. See `.env.example`
+for the full list.
+
+### Graph RAG (MVP2 open-ended Ask)
+
+Closed 7-question templates always work without an LLM. For open-ended Ask, edit `.env`:
+
+```
+GRAPH_RAG_ENABLED=true
+OPENAI_API_KEY=sk-...
+# OPENAI_MODEL=gpt-4o-mini
+```
+
+Or set the same variables in the shell. If Graph RAG is enabled without `OPENAI_API_KEY`, Ask returns a clear configuration non-answer instead of calling the network.
 
 ### Tests
 
@@ -77,7 +91,6 @@ pytest                          # unit + integration + data-quality tests
 pytest evals/ -q                # golden dataset — must be 100% pass
 ruff check .
 ```
-
 ## Deployment
 
 Not applicable — MVP1 is local-first only, no deployment target (see `docs/00_project/PROJECT_CHARTER.md` constraints).
@@ -98,7 +111,7 @@ None for MVP1. NL query requests are logged as structured JSON lines to a local 
 | Re-run ingestion (idempotent) | `python -m src.ingestion.run` |
 | Check graph data quality | `python -m src.quality.run` |
 | Reset the graph store | `docker-compose down -v && docker-compose up -d neo4j` |
-| Check for missing manifest keys | MCP tool `validate_manifest` |
+| Enable open-ended Graph RAG Ask | Set `GRAPH_RAG_ENABLED=true` and `OPENAI_API_KEY` in `.env` (or the shell) |
 
 ## Incidents
 

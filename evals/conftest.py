@@ -15,6 +15,15 @@ from src.ingestion.pipeline import run_ingestion
 SAMPLE_DIR = Path(__file__).resolve().parent.parent / "data" / "sample"
 
 
+@pytest.fixture(autouse=True)
+def _mvp1_golden_disables_graph_rag(monkeypatch: pytest.MonkeyPatch) -> None:
+    """MVP1 closed-question scenarios must stay deterministic even if a
+    developer has GRAPH_RAG_ENABLED set in their shell.
+    """
+    monkeypatch.delenv("GRAPH_RAG_ENABLED", raising=False)
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+
+
 @pytest.fixture(scope="module")
 def store():
     graph = FallbackGraphStore()

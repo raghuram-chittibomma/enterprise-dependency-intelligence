@@ -16,7 +16,10 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 from src.api.routes import ask, entities, pages, paths, search
+from src.env_loader import load_project_env
 from src.graph.config import get_graph_store
+
+load_project_env()
 
 WEB_DIR = Path(__file__).resolve().parent.parent / "web"
 templates = Jinja2Templates(directory=str(WEB_DIR / "templates"))

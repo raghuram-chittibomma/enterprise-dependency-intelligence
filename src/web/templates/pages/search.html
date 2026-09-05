@@ -22,9 +22,10 @@
 <section class="ask-page">
   <h2>Ask a dependency question</h2>
   <p class="ask-hint">
-    Supports the 7 fixed question shapes from MVP1
-    (e.g. &quot;What does Order Service depend on?&quot;).
-    Anything else gets an explicit non-answer.
+    Closed templates (e.g. &quot;What does Order Service depend on?&quot;) always work
+    without an LLM. With Graph RAG enabled (<code>GRAPH_RAG_ENABLED</code>),
+    open-ended dependency questions are answered from a retrieved subgraph
+    with cited evidence — or refused when evidence is insufficient.
   </p>
   <form
     class="ask-form"

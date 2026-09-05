@@ -1,27 +1,33 @@
 # Eval Strategy
 
-Status: accepted (MVP1 scope only — this doc is kept, not deleted, because the project has a planned LLM component from MVP2 onward; see `docs/00_project/PROJECT_CHARTER.md`)
+Status: accepted (MVP1 complete; MVP2 Graph RAG section active — see `ADR-0005`)
 
-Read by: Test/Eval Designer Agent, `llm-as-judge-rubric-design` skill.
+Read by: Test/Eval Designer Agent.
 
 ## What gets evaluated
 
-**MVP1 has no LLM-backed behavior**, so there is no LLM-as-judge evaluation yet — MVP1's "eval" is a deterministic golden dataset checked by exact-match assertions (functionally a test suite, not a quality score; see `docs/02_testing/TEST_STRATEGY.md`'s Golden dataset row). This section will activate for real once MVP2 (Graph RAG) introduces LLM-generated answers over retrieved subgraphs.
+**MVP1** has no LLM-backed behavior — its "eval" is a deterministic golden dataset checked by exact-match assertions (see `docs/02_testing/TEST_STRATEGY.md`'s Golden dataset row and `evals/`).
 
-Planned for MVP2: faithfulness (does the generated answer only assert relationships actually present in the retrieved subgraph — see `graph-rag-retrieval-review` skill), citation accuracy (does every claim point to a real node/relationship id), and appropriate refusal (does the system say "insufficient evidence" instead of fabricating a path when nothing relevant is found).
+**MVP2** adds open-ended Graph RAG answers. Evaluated dimensions:
+
+1. **Faithfulness** — every cited relationship in the answer exists in the retrieved subgraph (code-checked: cited edge keys ⊆ retrieved edge keys).
+2. **Citation accuracy** — every claim points to a real node/relationship id present in the graph.
+3. **Appropriate refusal** — when the subgraph cannot support an answer (or no entity resolves), the system returns "insufficient evidence" / not-found rather than fabricating a path.
 
 ## Golden scenarios
 
-MVP1: one scenario per supported NL question (the 7 templates in `docs/00_project/PRODUCT_BRIEF.md`), plus representative FR1–FR10/FR12/FR13 behaviors, live under `evals/`. Each scenario records `id`, `question` (where applicable), `expected_entities`, `expected_relationship_types`, and `expected_path` (where applicable) — see `increment-15-release`. New scenarios are added whenever the synthetic dataset (`data/sample/`) grows to cover a new relationship shape, or a bug is found that a golden scenario should have caught.
+MVP1: one scenario per supported NL question (the 7 templates in `docs/00_project/PRODUCT_BRIEF.md`), plus representative FR1–FR10/FR12/FR13 behaviors, live under `evals/`. Must be **100% pass**.
 
-MVP2+: this section will be extended with how open-ended (non-templated) question scenarios are authored and scored, once that work starts.
+MVP2: additional open-ended scenarios under `evals/` covering faithfulness, citation, and refusal. Unit tests use a **fake LLM** (no network). Optional live OpenAI runs are marked `@pytest.mark.integration` and skip without `OPENAI_API_KEY`.
 
 ## Judge policy
 
-Not applicable to MVP1 (no LLM-generated output to judge). To be defined at MVP2 kickoff, alongside the `ADR-0005` that will record the Graph RAG tooling choice (likely `neo4j-graphrag-python` per the original planning discussion).
+MVP1: exact match only.
+
+MVP2 v1: **code-level grounding checks** on cited edges (no LLM-as-judge required for the release gate). LLM-as-judge rubrics may be added later if answer phrasing quality needs scoring beyond grounding.
 
 ## Pass/fail thresholds
 
-MVP1: the golden dataset must be **100% pass** — every scenario is a deterministic exact-match assertion, so any failure is a bug in ingestion, entity resolution, a query template, or the NL query layer, not a quality regression to triage on a spectrum. This is enforced as part of `docs/02_testing/TEST_STRATEGY.md`'s Definition of Done and is a hard gate for `increment-15-release`.
+MVP1: golden dataset **100% pass**.
 
-MVP2+: score thresholds per scenario category will be defined once LLM-generated answers exist to threshold against.
+MVP2: every open-ended scenario must pass faithfulness (cited ⊆ retrieved) and refusal scenarios must not claim unsupported relationships. Fake-LLM unit tests are required on every commit touching `src/nlquery/`; live OpenAI integration tests are optional locally.

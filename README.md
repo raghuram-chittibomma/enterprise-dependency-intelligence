@@ -2,7 +2,7 @@
 
 A knowledge-graph-backed application for enterprise dependency discovery, change-impact analysis, and (from MVP2 onward) Graph RAG and agentic investigation — built incrementally over a synthetic enterprise, **Meridian Retail Group**.
 
-**Current milestone: MVP1 — Knowledge Graph and Dependency Explorer.** Deterministic Cypher queries only; zero LLM calls anywhere in the critical path. See `docs/00_project/PROJECT_CHARTER.md` and `docs/00_project/PRODUCT_BRIEF.md` for the full plan, and `docs/01_architecture/ARCHITECTURE.md` for how it's built.
+**Current milestone: MVP2 — Graph RAG (building on MVP1).** MVP1's deterministic Dependency Explorer remains fully usable. Open-ended Ask is opt-in via Graph RAG (`ADR-0005`). See `docs/00_project/PROJECT_CHARTER.md` and `docs/00_project/PRODUCT_BRIEF.md`.
 
 ## What this does today (MVP1)
 

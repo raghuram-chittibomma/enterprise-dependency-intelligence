@@ -7,7 +7,10 @@ from __future__ import annotations
 
 import os
 
+from src.env_loader import load_project_env
 from src.graph.store import GraphStore
+
+load_project_env()
 
 DEFAULT_NEO4J_URI = "bolt://192.168.4.52:7687"
 DEFAULT_NEO4J_USER = "neo4j"

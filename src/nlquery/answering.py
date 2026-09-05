@@ -16,7 +16,14 @@ from src.graph.queries import DependencyPath, EntityRef
 from src.nlquery.engine import RetrievalResult
 from src.nlquery.intent import QuestionType
 
-AnswerStatus = Literal["answered", "unsupported", "not_found", "ambiguous"]
+AnswerStatus = Literal[
+    "answered",
+    "unsupported",
+    "not_found",
+    "ambiguous",
+    "insufficient_evidence",
+]
+AnswerQuestionType = QuestionType | Literal["open_ended"]
 
 
 @dataclass(frozen=True)
@@ -41,7 +48,7 @@ class EvidenceEdge:
 class AnswerResult:
     question: str
     status: AnswerStatus
-    question_type: QuestionType | None
+    question_type: AnswerQuestionType | None
     text: str
     resolved_entities: list[EntityRef]
     evidence: list[EvidenceEdge]

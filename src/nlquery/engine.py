@@ -60,6 +60,22 @@ _ALLOWED_LABELS: dict[QuestionType, dict[str, frozenset[str]]] = {
 
 
 @dataclass(frozen=True)
+class SubgraphEdge:
+    """One edge in an open-ended Graph RAG retrieval subgraph (MVP2),
+    carrying ADR-0003 provenance for FR12/FR15 citation checks.
+    """
+
+    source_id: str
+    source_name: str
+    rel_type: str
+    target_id: str
+    target_name: str
+    source_system: str
+    source_record_id: str
+    evidence_type: str
+
+
+@dataclass(frozen=True)
 class RetrievalResult:
     question: str
     question_type: QuestionType | None
@@ -77,6 +93,11 @@ class RetrievalResult:
     ownership_rollup: OwnershipRollup | None = None
     capability_rollup: CapabilityRollup | None = None
     path_result: PathSearchResult | None = None
+    # MVP2 open-ended Graph RAG (`ADR-0005`): set when retrieval came from
+    # `retrieve_open_ended` rather than a closed template dispatch.
+    open_ended: bool = False
+    open_subgraph_nodes: list[EntityRef] | None = None
+    open_subgraph_edges: list[SubgraphEdge] | None = None
 
 
 def _resolve_entities(

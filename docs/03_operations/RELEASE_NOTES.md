@@ -10,11 +10,18 @@ Newest entry first. One entry per release/milestone.
 
 ### Added
 
+- **MVP2 Graph RAG (FR14–FR16, ADR-0005):** open-ended Ask over a deterministically retrieved dependency subgraph with OpenAI-backed grounded generation (`LLMAnswerGenerator`). Closed 7-question templates remain fully deterministic. Opt-in via `GRAPH_RAG_ENABLED` + `OPENAI_API_KEY`. Citations are filtered to the retrieved subgraph; unanswered / fabricated citations become `insufficient_evidence`.
+- Open-ended retrieval (`src/nlquery/graphrag.py`), config helpers, Ask routing, homepage hint, faithfulness/refusal evals (`evals/test_mvp2_graphrag.py`) and fake-LLM unit tests.
+
 ### Changed
+
+- Docs: ARCHITECTURE, PRODUCT_BRIEF, EVAL_STRATEGY, RUNBOOK, AGENTS, README updated for MVP2 Graph RAG boundary.
 
 ### Fixed
 
 ### Upgraded
+
+- `openai>=1.40,<2` added to `requirements.txt` for Graph RAG generation.
 
 <!-- Dependency/runtime upgrades handled by the Dependency Upgrade Agent go here. -->
 

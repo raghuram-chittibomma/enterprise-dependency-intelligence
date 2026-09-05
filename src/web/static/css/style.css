@@ -511,7 +511,8 @@ body {
 
 .ask-answer-unsupported,
 .ask-answer-not_found,
-.ask-answer-ambiguous {
+.ask-answer-ambiguous,
+.ask-answer-insufficient_evidence {
   border-left: 3px solid var(--color-deprecated);
 }
 
