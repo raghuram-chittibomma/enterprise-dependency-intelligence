@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+
+{% block title %}Rationalize &middot; Intelligence{% endblock %}
+
+{% block content %}
+<a class="back-link" href="/intelligence">&larr; Intelligence</a>
+<section class="ask-page">
+  <h1>Technology rationalization</h1>
+  <p class="ask-hint">
+    Aggregate Applications/Services by <code>technology</code> and Databases by
+    <code>engine</code> (`FR26`).
+  </p>
+
+  <h2>Technologies</h2>
+  {% if report.technology_buckets %}
+  <table class="ration-table">
+    <thead>
+      <tr>
+        <th>Technology</th>
+        <th>Count</th>
+        <th>Criticality</th>
+        <th>Lifecycle</th>
+        <th>Owners</th>
+        <th>Examples</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for b in report.technology_buckets %}
+      <tr>
+        <td>{{ b.key }}</td>
+        <td>{{ b.count }}</td>
+        <td>{% for k, v in b.criticality_mix.items() %}{{ k }}:{{ v }}{% if not loop.last %}, {% endif %}{% endfor %}</td>
+        <td>{% for k, v in b.lifecycle_mix.items() %}{{ k }}:{{ v }}{% if not loop.last %}, {% endif %}{% endfor %}</td>
+        <td>{{ b.owners | join(", ") if b.owners else "—" }}</td>
+        <td>
+          {% for id, name in b.examples %}
+          <a href="/entities/{{ id }}">{{ name }}</a>{% if not loop.last %}, {% endif %}
+          {% endfor %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="entity-metadata-empty">No Application/Service technology properties found.</p>
+  {% endif %}
+
+  <h2>Database engines</h2>
+  {% if report.engine_buckets %}
+  <table class="ration-table">
+    <thead>
+      <tr>
+        <th>Engine</th>
+        <th>Count</th>
+        <th>Criticality</th>
+        <th>Lifecycle</th>
+        <th>Owners</th>
+        <th>Examples</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for b in report.engine_buckets %}
+      <tr>
+        <td>{{ b.key }}</td>
+        <td>{{ b.count }}</td>
+        <td>{% for k, v in b.criticality_mix.items() %}{{ k }}:{{ v }}{% if not loop.last %}, {% endif %}{% endfor %}</td>
+        <td>{% for k, v in b.lifecycle_mix.items() %}{{ k }}:{{ v }}{% if not loop.last %}, {% endif %}{% endfor %}</td>
+        <td>{{ b.owners | join(", ") if b.owners else "—" }}</td>
+        <td>
+          {% for id, name in b.examples %}
+          <a href="/entities/{{ id }}">{{ name }}</a>{% if not loop.last %}, {% endif %}
+          {% endfor %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="entity-metadata-empty">No Database engine properties found.</p>
+  {% endif %}
+</section>
+{% endblock %}

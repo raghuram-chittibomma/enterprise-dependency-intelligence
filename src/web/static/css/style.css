@@ -736,3 +736,134 @@ body {
   margin-bottom: 0.35rem;
 }
 
+.intelligence-hub-list {
+  margin: 1rem 0;
+  padding-left: 1.2rem;
+  line-height: 1.6;
+}
+
+.intelligence-hub-list a {
+  color: var(--color-accent);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.intelligence-hub-list a:hover {
+  text-decoration: underline;
+}
+
+.drift-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.drift-item {
+  padding: 0.85rem 1.1rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  border-left: 3px solid var(--color-deprecated);
+}
+
+.drift-severity-high {
+  border-left-color: #b42318;
+}
+
+.drift-severity-medium {
+  border-left-color: var(--color-deprecated);
+}
+
+.drift-severity-low {
+  border-left-color: var(--color-border);
+}
+
+.drift-heading {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  align-items: center;
+}
+
+.drift-detail {
+  margin: 0.45rem 0 0;
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
+}
+
+.ration-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+  margin: 0.75rem 0 1.5rem;
+}
+
+.ration-table th,
+.ration-table td {
+  border: 1px solid var(--color-border);
+  padding: 0.45rem 0.55rem;
+  text-align: left;
+  vertical-align: top;
+}
+
+.ration-table th {
+  background: var(--color-surface);
+  font-weight: 600;
+}
+
+.ration-table a {
+  color: var(--color-accent);
+  text-decoration: none;
+}
+
+.ration-table a:hover {
+  text-decoration: underline;
+}
+
+.risk-score-row {
+  display: flex;
+  gap: 0.85rem;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.risk-score {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.75rem;
+  height: 2.75rem;
+  padding: 0 0.5rem;
+  border-radius: var(--radius);
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #fff;
+  background: var(--color-accent);
+}
+
+.risk-band-low {
+  background: #2f6f4e;
+}
+
+.risk-band-medium {
+  background: #9a6700;
+}
+
+.risk-band-high {
+  background: #b54708;
+}
+
+.risk-band-critical {
+  background: #b42318;
+}
+
+.whatif-subhead {
+  margin: 0.85rem 0 0.35rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+

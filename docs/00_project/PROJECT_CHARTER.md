@@ -19,7 +19,7 @@ Large enterprises operate hundreds of applications, APIs, services, databases, p
 ## Non-goals (for MVP1)
 
 - No LLM call anywhere in the MVP1 critical path.
-- No unstructured risk scoring, drift detection, or what-if analysis (deferred to MVP5).
+- No persisted what-if scenario history or mutating simulated graphs (deferred past MVP5 v1; see `ADR-0008`).
 - No authentication, multi-tenancy, or cloud deployment.
 - No table-level graph nodes, or Technology/Environment as graph nodes (kept as properties — see `docs/01_architecture/DATA_MODEL.md`).
 

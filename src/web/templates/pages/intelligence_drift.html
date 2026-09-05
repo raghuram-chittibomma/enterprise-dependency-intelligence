@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block title %}Drift &middot; Intelligence{% endblock %}
+
+{% block content %}
+<a class="back-link" href="/intelligence">&larr; Intelligence</a>
+<section class="ask-page">
+  <h1>Drift signals</h1>
+  <p class="ask-hint">
+    Lifecycle, replacement, and unresolved-queue consistency checks over the
+    Meridian graph (`FR25`).
+  </p>
+  {% if signals %}
+  <ul class="drift-list">
+    {% for s in signals %}
+    <li class="drift-item drift-severity-{{ s.severity }}">
+      <div class="drift-heading">
+        <span class="badge badge-lifecycle-{{ s.kind }}">{{ s.kind }}</span>
+        <span class="badge badge-criticality-{{ s.severity if s.severity != 'medium' else 'medium' }}">{{ s.severity }}</span>
+        <strong>{{ s.title }}</strong>
+      </div>
+      <p class="drift-detail">{{ s.detail }}</p>
+      {% if s.entity_id %}
+      <p class="ask-resolved"><a href="/entities/{{ s.entity_id }}">View {{ s.entity_name }}</a></p>
+      {% endif %}
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="entity-metadata-empty">No drift signals detected in the current graph / unresolved queue.</p>
+  {% endif %}
+</section>
+{% endblock %}

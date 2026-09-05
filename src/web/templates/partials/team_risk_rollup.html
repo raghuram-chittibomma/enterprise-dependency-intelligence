@@ -1,0 +1,38 @@
+{% if rollup %}
+<div class="ask-answer ask-answer-ok risk-panel">
+  <div class="risk-score-row">
+    <span class="risk-score risk-band-{{ rollup.band }}">{{ rollup.max_score }}</span>
+    <div>
+      <strong>Portfolio risk (max): {{ rollup.band }}</strong>
+      <p class="ask-hint" style="margin:0.25rem 0 0">
+        Rollup over {{ rollup.owned_count }} system(s) owned by this team.
+        Avg score {{ rollup.avg_score }}.
+      </p>
+    </div>
+  </div>
+  {% if rollup.band_mix %}
+  <p class="ask-hint">
+    Band mix:
+    {% for band, n in rollup.band_mix.items() %}
+    {{ band }}:{{ n }}{% if not loop.last %}, {% endif %}
+    {% endfor %}
+  </p>
+  {% endif %}
+  {% if rollup.systems %}
+  <h3 class="whatif-subhead">Owned systems by risk</h3>
+  <ul class="investigate-findings">
+    {% for a in rollup.systems %}
+    <li>
+      <a href="/entities/{{ a.entity_id }}">{{ a.entity_name }}</a>
+      <span class="entity-label">{{ a.entity_label }}</span>
+      — score {{ a.score }} ({{ a.band }})
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="entity-metadata-empty">This team does not own any systems in the graph.</p>
+  {% endif %}
+</div>
+{% else %}
+<p class="entity-metadata-empty">Could not compute owned-systems risk rollup.</p>
+{% endif %}

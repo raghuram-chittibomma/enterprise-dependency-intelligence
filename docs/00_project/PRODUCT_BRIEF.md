@@ -73,6 +73,16 @@ Each FR is traceable to an increment todo (this project tracks delivery via the 
 | FR21 | Investigation reports cite only graph edges and/or document chunks gathered during the run; refuse or mark insufficient when unsupported (extends FR15/FR16/FR19). | increment-28-agent / increment-30-evals |
 | FR22 | Show a compact investigation step trace (tools invoked + budgets) alongside report evidence. | increment-29-ui / increment-30-evals |
 
+## Functional requirements (MVP5 — Advanced Enterprise Intelligence)
+
+| ID | Requirement | Increment |
+|----|-------------|-----------|
+| FR23 | Compute a deterministic change-risk score (0–100) for an entity from criticality, lifecycle, blast radius, fan-in, ownership gaps, and capability exposure, with factor evidence. | increment-32-risk |
+| FR24 | Run a read-only retirement what-if: bounded blast radius, stakeholder and capability rollups, and top impacted entities by risk — without mutating the graph. | increment-33-whatif |
+| FR25 | Surface drift signals: deprecated/retired still consumed, `REPLACED_BY` with remaining consumers, and unresolved ingestion references. | increment-34-drift |
+| FR26 | Technology rationalization report: aggregate Applications/Services by `technology` and Databases by `engine` with counts, criticality/lifecycle mix, and owners. | increment-35-rationalize |
+| FR27 | When `INTELLIGENCE_NARRATIVE_ENABLED`, optionally narrate risk/what-if factor JSON via LLM citing only provided factor ids (never invent scores). | increment-36-narrative-evals |
+
 ### The 7 supported natural-language questions (FR11/FR13 closed template set)
 
 1. What applications/services directly consume Customer API v1?
@@ -89,8 +99,8 @@ Any question outside this set (or referencing an unresolvable entity) returns an
 
 | Category | Requirement |
 |---|---|
-| AI boundary | Zero LLM calls on MVP1 structured paths (FR1–FR10) and the closed 7-question NL templates (FR11). MVP2/MVP3 allow an LLM **only** on the open-ended Ask path (`ADR-0005`/`ADR-0006`). MVP4 allows an LLM on the separate Investigate path behind allowlisted tools (`ADR-0007`), gated by `AGENTIC_INVESTIGATION_ENABLED`. |
-| Correctness | No fabricated relationships or doc claims. Closed NL answers remain enumerable; open-ended Ask and Investigate reports may only assert gathered evidence (FR15/FR16/FR19/FR21). |
+| AI boundary | Zero LLM calls on MVP1 structured paths (FR1–FR10), closed NL templates (FR11), and MVP5 deterministic intelligence (FR23–FR26). MVP2/MVP3 allow an LLM on open-ended Ask; MVP4 on Investigate (`ADR-0007`); MVP5 optional intelligence narrative only when `INTELLIGENCE_NARRATIVE_ENABLED` (`ADR-0008`). |
+| Correctness | No fabricated relationships, doc claims, or risk scores. Closed NL answers remain enumerable; Ask/Investigate cite gathered evidence; intelligence scores/factors are code-computed (`ADR-0008`). |
 | Performance | Sub-second response for traversals up to depth 4 over the ~150–250 node / synthetic-scale MVP1 graph. |
 | Idempotency | Ingestion is safe to re-run: re-running the pipeline twice produces zero duplicate nodes/relationships (`MERGE` on natural key). |
 | Provenance | Every node and relationship carries `source_system`, `source_record_id`, and (relationships only) `evidence_type` (`documented` \| `inferred`). MVP1 sources only ever write `documented`. |
@@ -114,13 +124,14 @@ Any question outside this set (or referencing an unresolvable entity) returns an
 - **Evidence / provenance** — the source system, source record, and (for relationships) documented-vs-inferred status backing a fact in the graph; every UI answer must be traceable to evidence (FR12).
 - **Golden question** — one of the 7 fixed NL question templates (or the corresponding golden-dataset scenario) used to evaluate the NL query layer.
 
-## Out of scope (still deferred past MVP4)
+## Out of scope (still deferred past MVP5)
 
 - Ask auto-escalation into Investigate (rejected for MVP4 v1; see `ADR-0007`).
 - Rewriting the 7 closed MVP1 answers with an LLM (rejected in `ADR-0005`).
-- Free Text2Cypher as the primary retrieval path (rejected in MVP2/MVP4 v1).
+- Free Text2Cypher as the primary retrieval path (rejected in MVP2/MVP4/MVP5 v1).
 - Real Confluence/SharePoint connectors or Neo4j-native vector indexes (MVP3 v1 uses synthetic Meridian docs + local SQLite vectors; see `ADR-0006`).
-- Risk scoring, drift detection, what-if analysis, technology rationalization reporting (deferred to MVP5).
+- Persisted what-if scenario history / mutating simulated graphs (rejected for MVP5 v1; see `ADR-0008`).
+- Full source-vs-graph delete reconciliation (deferred; MVP5 uses unresolved-queue + lifecycle/`REPLACED_BY` drift).
 - Authentication, authorization, multi-tenancy, cloud deployment.
 - `Table` as a graph node (databases carry a `key_tables` property list instead).
 - `Technology` and `Environment` as graph nodes (kept as properties on `Application`/`Service`).

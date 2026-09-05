@@ -121,6 +121,19 @@ Open `/investigate`, enter a change-impact style question naming a Meridian enti
 executes a required evidence skeleton, then up to N allowlisted tool calls, then
 a grounded report with evidence and a step trace (`ADR-0007`).
 
+### Advanced Intelligence (MVP5)
+
+Deterministic risk, what-if, drift, and rationalization are always available
+(no master kill-switch). Optional narrative:
+
+```
+INTELLIGENCE_NARRATIVE_ENABLED=true
+OPENAI_API_KEY=sk-...
+```
+
+Open `/intelligence` for the hub (drift + rationalize links). Entity detail
+pages show risk score and a retirement what-if panel (`ADR-0008`).
+
 ### Tests
 
 ```bash
@@ -152,6 +165,8 @@ None for MVP1. NL query requests are logged as structured JSON lines to a local 
 | Index architecture docs for Hybrid Ask | `python -m src.retrieval.index_docs` (after datagen + ingestion) |
 | Enable Hybrid Graph + Document RAG | Set `HYBRID_DOC_RAG_ENABLED=true` (requires Graph RAG + API key) |
 | Enable Agentic Investigate | Set `AGENTIC_INVESTIGATION_ENABLED=true` and open `/investigate` |
+| Open Intelligence hub | Visit `/intelligence` (risk on entity pages; drift + rationalize reports) |
+| Enable intelligence narrative | Set `INTELLIGENCE_NARRATIVE_ENABLED=true` (+ `OPENAI_API_KEY`) |
 
 ## Incidents
 

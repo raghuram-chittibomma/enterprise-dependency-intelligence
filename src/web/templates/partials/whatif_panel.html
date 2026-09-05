@@ -1,0 +1,59 @@
+{% if result %}
+<div class="ask-answer ask-answer-ok whatif-panel">
+  <p class="ask-answer-text">
+    If <strong>{{ result.seed.name }}</strong> were retired (depth {{ result.max_depth }}),
+    <strong>{{ result.downstream | length }}</strong> downstream entities are in the
+    structural blast radius.
+  </p>
+  {% if result.narrative %}
+  <p class="ask-answer-text">{{ result.narrative }}</p>
+  {% endif %}
+
+  <h3 class="whatif-subhead">Stakeholder teams ({{ result.stakeholder_teams | length }})</h3>
+  {% if result.stakeholder_teams %}
+  <ul class="investigate-findings">
+    {% for t in result.stakeholder_teams %}
+    <li><a href="/entities/{{ t.id }}">{{ t.name }}</a></li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="entity-metadata-empty">No owning teams in the subtree.</p>
+  {% endif %}
+
+  <h3 class="whatif-subhead">Capabilities touched ({{ result.capabilities | length }})</h3>
+  {% if result.capabilities %}
+  <ul class="investigate-findings">
+    {% for c in result.capabilities %}
+    <li><a href="/entities/{{ c.id }}">{{ c.name }}</a></li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="entity-metadata-empty">No capabilities in the rollup.</p>
+  {% endif %}
+
+  <h3 class="whatif-subhead">Top impacted by risk</h3>
+  {% if result.top_impacted %}
+  <ul class="investigate-findings">
+    {% for a in result.top_impacted %}
+    <li>
+      <a href="/entities/{{ a.entity_id }}">{{ a.entity_name }}</a>
+      — score {{ a.score }} ({{ a.band }})
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="entity-metadata-empty">No downstream entities to score.</p>
+  {% endif %}
+
+  {% if result.upstream_critical %}
+  <h3 class="whatif-subhead">Critical/high upstream dependencies</h3>
+  <ul class="investigate-findings">
+    {% for e in result.upstream_critical %}
+    <li><a href="/entities/{{ e.id }}">{{ e.name }}</a> ({{ e.criticality }})</li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+</div>
+{% else %}
+<p class="entity-metadata-empty">Could not run what-if for this entity.</p>
+{% endif %}

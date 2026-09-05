@@ -479,3 +479,37 @@ class TestEvidencePanel:
         assert response.status_code == 200
         assert "evidence-badge" in response.text
         assert "api-catalog" in response.text
+
+
+class TestIntelligenceRoutes:
+    def test_hub_and_nav(self, client: TestClient) -> None:
+        response = client.get("/intelligence")
+        assert response.status_code == 200
+        assert "Drift signals" in response.text
+        assert "Technology rationalization" in response.text
+        home = client.get("/")
+        assert 'href="/intelligence"' in home.text
+
+    def test_risk_partial(self, client: TestClient) -> None:
+        response = client.get("/entities/api:api-catalog:1/risk")
+        assert response.status_code == 200
+        assert "risk-panel" in response.text or "Change risk" in response.text
+
+    def test_whatif_partial(self, client: TestClient) -> None:
+        response = client.get("/entities/api:api-catalog:1/what-if")
+        assert response.status_code == 200
+        assert "blast radius" in response.text.lower() or "retired" in response.text.lower()
+
+    def test_drift_and_rationalize_pages(self, client: TestClient) -> None:
+        drift = client.get("/intelligence/drift")
+        assert drift.status_code == 200
+        ration = client.get("/intelligence/rationalize")
+        assert ration.status_code == 200
+        assert "Technologies" in ration.text
+        assert "React" in ration.text or "PostgreSQL" in ration.text
+
+    def test_team_risk_shows_owned_systems_rollup(self, client: TestClient) -> None:
+        response = client.get("/entities/team:team-ownership:1/risk")
+        assert response.status_code == 200
+        assert "Portfolio risk" in response.text or "Owned systems" in response.text
+        assert "Storefront" in response.text

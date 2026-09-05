@@ -2,10 +2,10 @@
 
 A knowledge-graph-backed application for enterprise dependency discovery, change-impact analysis, and (from MVP2 onward) Graph RAG and agentic investigation — built incrementally over a synthetic enterprise, **Meridian Retail Group**.
 
-**Current milestone: MVP4 — Agentic Investigation (building on MVP1–3).**
-MVP1–3 Ask paths remain fully usable. Investigate runs a required evidence
-skeleton plus bounded allowlisted tools and returns a grounded report when
-`AGENTIC_INVESTIGATION_ENABLED` is on (`ADR-0007`). See
+**Current milestone: MVP5 — Advanced Enterprise Intelligence (building on MVP1–4).**
+MVP1–4 Ask/Investigate paths remain fully usable. Intelligence adds deterministic
+risk scoring, retirement what-if, drift signals, and technology rationalization
+(`ADR-0008`). Optional narrative via `INTELLIGENCE_NARRATIVE_ENABLED`. See
 `docs/00_project/PROJECT_CHARTER.md` and `docs/00_project/PRODUCT_BRIEF.md`.
 
 ## What this does today (MVP1)
@@ -45,6 +45,6 @@ Operating rules for AI coding agents live in `AGENTS.md`. Delivery tracking for 
 | MVP2 — Graph RAG | Grounded LLM answers for open-ended questions, via dynamic graph retrieval over the same graph. **Done.** |
 | MVP3 — Hybrid Graph + Document RAG | Unstructured architecture documentation fused with graph evidence. **Done.** |
 | MVP4 — Agentic Investigation | Bounded, multi-step investigation producing evidence-backed reports. **Done.** |
-| MVP5 — Advanced Enterprise Intelligence | Risk scoring, drift detection, what-if analysis. |
+| MVP5 — Advanced Enterprise Intelligence | Risk scoring, drift detection, what-if analysis, tech rationalization. **Done.** |
 
 Each milestone adds value on top of the previous one — MVP1's UI, API, and deterministic query layer stay usable through every later milestone.

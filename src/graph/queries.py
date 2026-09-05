@@ -610,6 +610,27 @@ def get_owning_team(store: GraphStore, entity_id: str) -> OwnerRef | None:
     return OwnerRef(id=owner_node["id"], name=owner_node["name"])
 
 
+def get_entities_owned_by_team(store: GraphStore, team_id: str) -> list[EntityRef] | None:
+    """Entities with an inbound OWNED_BY edge to `team_id`.
+
+    Returns `None` if `team_id` is not a Team node; empty list if the team
+    exists but owns nothing.
+    """
+    node_by_id = {n["id"]: n for n in store.get_all_nodes()}
+    team = node_by_id.get(team_id)
+    if team is None or team.get("label") != "Team":
+        return None
+    owned: list[EntityRef] = []
+    for rel in store.get_all_relationships():
+        if rel["rel_type"] != "OWNED_BY" or rel["target_id"] != team_id:
+            continue
+        source = node_by_id.get(rel["source_id"])
+        if source is not None:
+            owned.append(_entity_ref(source))
+    owned.sort(key=lambda e: (e.label, e.name))
+    return owned
+
+
 @dataclass(frozen=True)
 class OwnershipGroup:
     """Every entity in the traversed subtree owned by one team --

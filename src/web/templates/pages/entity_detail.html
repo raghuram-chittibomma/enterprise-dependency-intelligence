@@ -55,6 +55,77 @@
 </section>
 
 <section class="dependency-section">
+  {% if entity.label == "Team" %}
+  <h2>Owned systems risk</h2>
+  <p class="graph-hint">Portfolio rollup of FR23 change-risk scores for systems this team owns via <code>OWNED_BY</code>.</p>
+  {% else %}
+  <h2>Change risk</h2>
+  <p class="graph-hint">Deterministic score from criticality, lifecycle, blast radius, fan-in, ownership gaps, and capabilities (`FR23`).</p>
+  {% endif %}
+  <div
+    id="risk-loading"
+    class="htmx-indicator ask-loading"
+    role="status"
+    aria-live="polite"
+  >
+    <span class="ask-loading-spinner" aria-hidden="true"></span>
+    {% if entity.label == "Team" %}Rolling up owned-system risk…{% else %}Computing risk score…{% endif %}
+  </div>
+  <div
+    id="risk-panel"
+    class="ask-answer-container"
+    hx-get="/entities/{{ entity.id }}/risk"
+    hx-trigger="load"
+    hx-swap="innerHTML"
+    hx-indicator="#risk-loading"
+  ></div>
+</section>
+
+<section class="dependency-section">
+  {% if entity.label == "Team" %}
+  <h2>What if this team's systems changed?</h2>
+  <p class="graph-hint">Union of retirement blast radii across systems owned by this team — no graph mutation (`FR24`).</p>
+  {% else %}
+  <h2>What if we retired this?</h2>
+  <p class="graph-hint">Read-only blast-radius simulation — no graph mutation (`FR24`).</p>
+  {% endif %}
+  <div class="graph-controls">
+    <label for="whatif-depth">Depth</label>
+    <select
+      id="whatif-depth"
+      name="depth"
+      hx-get="/entities/{{ entity.id }}/what-if"
+      hx-trigger="change"
+      hx-target="#whatif-panel"
+      hx-indicator="#whatif-loading"
+      hx-on::before-request="document.getElementById('whatif-panel').innerHTML = ''"
+    >
+      <option value="1">1 hop</option>
+      <option value="2" selected>2 hops</option>
+      <option value="3">3 hops</option>
+      <option value="4">4 hops</option>
+    </select>
+  </div>
+  <div
+    id="whatif-loading"
+    class="htmx-indicator ask-loading"
+    role="status"
+    aria-live="polite"
+  >
+    <span class="ask-loading-spinner" aria-hidden="true"></span>
+    {% if entity.label == "Team" %}Running portfolio what-if…{% else %}Running retirement what-if…{% endif %}
+  </div>
+  <div
+    id="whatif-panel"
+    class="ask-answer-container"
+    hx-get="/entities/{{ entity.id }}/what-if?depth=2"
+    hx-trigger="load"
+    hx-swap="innerHTML"
+    hx-indicator="#whatif-loading"
+  ></div>
+</section>
+
+<section class="dependency-section">
   <h2>Depends on ({{ dependencies.upstream | length }})</h2>
   {% if dependencies.upstream %}
   <ul class="dependency-list">

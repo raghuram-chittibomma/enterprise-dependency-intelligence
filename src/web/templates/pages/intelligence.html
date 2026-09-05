@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block title %}Intelligence &middot; Enterprise Dependency Intelligence{% endblock %}
+
+{% block content %}
+<section class="ask-page">
+  <h1>Intelligence</h1>
+  <p class="ask-hint">
+    MVP5 advanced enterprise intelligence (`ADR-0008`): deterministic risk
+    scoring and retirement what-if on entity pages, plus landscape drift and
+    technology rationalization reports. Optional LLM narrative via
+    <code>INTELLIGENCE_NARRATIVE_ENABLED</code>.
+  </p>
+  <ul class="intelligence-hub-list">
+    <li>
+      <a href="/intelligence/drift">Drift signals</a>
+      <span> — deprecated/retired still consumed, REPLACED_BY with consumers, unresolved references</span>
+    </li>
+    <li>
+      <a href="/intelligence/rationalize">Technology rationalization</a>
+      <span> — Applications/Services by technology, Databases by engine</span>
+    </li>
+  </ul>
+  <p class="ask-hint">
+    Open any entity from <a href="/">Search</a> to see its risk score and
+    retirement what-if panel.
+  </p>
+</section>
+{% endblock %}

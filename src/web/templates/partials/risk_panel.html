@@ -1,0 +1,21 @@
+{% if assessment %}
+<div class="ask-answer ask-answer-ok risk-panel">
+  <div class="risk-score-row">
+    <span class="risk-score risk-band-{{ assessment.band }}">{{ assessment.score }}</span>
+    <div>
+      <strong>Change risk: {{ assessment.band }}</strong>
+      <p class="ask-hint" style="margin:0.25rem 0 0">Deterministic score from graph factors (FR23).</p>
+    </div>
+  </div>
+  {% if assessment.narrative %}
+  <p class="ask-answer-text">{{ assessment.narrative }}</p>
+  {% endif %}
+  <ul class="investigate-findings">
+    {% for f in assessment.factors %}
+    <li><strong>{{ f.label }}</strong> — {{ f.points }} pts</li>
+    {% endfor %}
+  </ul>
+</div>
+{% else %}
+<p class="entity-metadata-empty">Could not compute risk for this entity.</p>
+{% endif %}

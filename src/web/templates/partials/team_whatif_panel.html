@@ -1,0 +1,63 @@
+{% if portfolio %}
+<div class="ask-answer ask-answer-ok whatif-panel">
+  <p class="ask-answer-text">
+    Portfolio what-if for systems owned by
+    <strong>{{ portfolio.team_name }}</strong> (depth {{ portfolio.max_depth }}):
+    retiring those systems would touch
+    <strong>{{ portfolio.union_downstream | length }}</strong> distinct downstream
+    entities across the dependency graph.
+  </p>
+
+  <h3 class="whatif-subhead">Owned systems ({{ portfolio.owned_systems | length }})</h3>
+  {% if portfolio.owned_systems %}
+  <ul class="investigate-findings">
+    {% for e in portfolio.owned_systems %}
+    <li>
+      <a href="/entities/{{ e.id }}">{{ e.name }}</a>
+      <span class="entity-label">{{ e.label }}</span>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="entity-metadata-empty">No owned systems to simulate.</p>
+  {% endif %}
+
+  <h3 class="whatif-subhead">Stakeholder teams in union blast ({{ portfolio.stakeholder_teams | length }})</h3>
+  {% if portfolio.stakeholder_teams %}
+  <ul class="investigate-findings">
+    {% for t in portfolio.stakeholder_teams %}
+    <li><a href="/entities/{{ t.id }}">{{ t.name }}</a></li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="entity-metadata-empty">No stakeholder teams in the union blast radius.</p>
+  {% endif %}
+
+  <h3 class="whatif-subhead">Capabilities touched ({{ portfolio.capabilities | length }})</h3>
+  {% if portfolio.capabilities %}
+  <ul class="investigate-findings">
+    {% for c in portfolio.capabilities %}
+    <li><a href="/entities/{{ c.id }}">{{ c.name }}</a></li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="entity-metadata-empty">No capabilities in the union rollup.</p>
+  {% endif %}
+
+  <h3 class="whatif-subhead">Highest-risk owned systems</h3>
+  {% if portfolio.top_owned_by_risk %}
+  <ul class="investigate-findings">
+    {% for a in portfolio.top_owned_by_risk %}
+    <li>
+      <a href="/entities/{{ a.entity_id }}">{{ a.entity_name }}</a>
+      — score {{ a.score }} ({{ a.band }})
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="entity-metadata-empty">No owned systems to score.</p>
+  {% endif %}
+</div>
+{% else %}
+<p class="entity-metadata-empty">Could not run team portfolio what-if.</p>
+{% endif %}
