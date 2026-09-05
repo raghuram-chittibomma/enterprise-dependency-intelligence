@@ -1,8 +1,7 @@
 """Orchestrates the source parsers into a single idempotent ingestion run
-(increment-4 / MVP3 docs). Two global phases -- all nodes, then all
-relationships -- which is what actually guarantees no forward-reference ever
-fails to resolve, regardless of row order within (or even between) source
-files: by the time phase 2 starts, every node from every source already exists.
+(increment-4 / MVP3 docs / ADR-0009 recon). Two global upsert phases -- all
+nodes, then all relationships -- then a dry-run membership reconciliation
+report (never deletes).
 """
 
 from __future__ import annotations
@@ -20,6 +19,7 @@ from src.ingestion.parsers import (
     integration_catalog,
     team_ownership,
 )
+from src.ingestion.reconcile import ReconciliationReport, reconcile
 from src.ingestion.resolution import EntityResolver, UnresolvedReference
 
 DEFAULT_DATA_DIR = Path("data/sample")
@@ -31,6 +31,7 @@ class IngestionResult:
     nodes_upserted: int
     relationships_upserted: int
     unresolved: list[UnresolvedReference]
+    reconciliation: ReconciliationReport | None = None
 
 
 def _read_all(data_dir: Path) -> dict[str, list]:
@@ -52,8 +53,6 @@ def run_ingestion(
     resolver = EntityResolver()
     rows = _read_all(data_dir)
 
-    # Phase 1: nodes (docs last so related entities already exist for resolution
-    # registration; relationships still run in a separate phase).
     all_nodes = [
         *cmdb.build_nodes(rows["cmdb"], resolver),
         *api_catalog.build_nodes(rows["api_catalog"], resolver),
@@ -65,9 +64,6 @@ def run_ingestion(
     for node in all_nodes:
         store.upsert_node(type(node).label(), node)
 
-    # Phase 2: relationships -- every endpoint from phase 1 is already
-    # registered with the resolver, so no reference can be a forward
-    # reference here.
     all_relationships = [
         *cmdb.build_relationships(rows["cmdb"], resolver),
         *api_catalog.build_relationships(rows["api_catalog"], resolver),
@@ -84,10 +80,13 @@ def run_ingestion(
     if resolver.unresolved and unresolved_path is not None:
         _write_unresolved_queue(resolver.unresolved, unresolved_path)
 
+    recon = reconcile(store, all_nodes, all_relationships)
+
     return IngestionResult(
         nodes_upserted=len(all_nodes),
         relationships_upserted=len(all_relationships),
         unresolved=resolver.unresolved,
+        reconciliation=recon,
     )
 
 

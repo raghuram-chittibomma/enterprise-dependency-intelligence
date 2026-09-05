@@ -65,6 +65,7 @@ flowchart LR
 | NL query layer | Deterministic intent classification → entity resolution → template dispatch for the 7 closed questions (FR11/FR13). When `GRAPH_RAG_ENABLED`, unmatched questions use open-ended subgraph retrieval + `LLMAnswerGenerator` (`ADR-0005`, FR14–FR16). When `HYBRID_DOC_RAG_ENABLED`, fuse top-k doc chunks (`ADR-0006`, FR17–FR19). | `src/nlquery/` |
 | Agentic investigation | Separate Investigate entry: required evidence skeleton + bounded allowlisted tool calls + grounded report (`ADR-0007`, FR20–FR22). | `src/investigate/` |
 | Advanced intelligence | Deterministic risk, what-if, drift, and tech rationalization (`ADR-0008`, FR23–FR26); optional LLM narrative (`FR27`). | `src/intelligence/` |
+| Ingestion reconciliation | Expected-set diff after upsert; dry-run report only (`ADR-0009`, FR28). | `src/ingestion/reconcile.py` |
 | API layer | FastAPI routes exposing search, detail, traversal, paths, ownership, capabilities, NL query, Investigate, Intelligence, and evidence endpoints. | `src/api/` |
 | UI layer | Server-rendered Jinja2 templates + HTMX for interactivity + Cytoscape.js (CDN) for subgraph visualization (FR5). No SPA build step. | `src/web/templates/`, `src/web/static/` |
 | Data quality checks | Automated checks for orphan nodes, duplicate natural keys, and referential consistency, run after ingestion and in CI. | `src/quality/`, `tests/` |
@@ -114,3 +115,4 @@ See `docs/01_architecture/DECISIONS/` for full ADRs:
 - [`ADR-0006-hybrid-document-rag.md`](DECISIONS/ADR-0006-hybrid-document-rag.md) — MVP3 Hybrid Doc RAG: Document ontology + local SQLite vectors + fused Ask.
 - [`ADR-0007-agentic-investigation.md`](DECISIONS/ADR-0007-agentic-investigation.md) — MVP4 Investigate: skeleton + bounded allowlisted tools + grounded report.
 - [`ADR-0008-advanced-intelligence.md`](DECISIONS/ADR-0008-advanced-intelligence.md) — MVP5: deterministic risk/what-if/drift/rationalize + optional narrative.
+- [`ADR-0009-source-graph-reconciliation.md`](DECISIONS/ADR-0009-source-graph-reconciliation.md) — source–graph membership recon: dry-run default, opt-in hard delete.

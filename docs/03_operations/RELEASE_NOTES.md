@@ -11,6 +11,7 @@ Newest entry first. One entry per release/milestone.
 ### Added
 
 - **MVP5 Advanced Enterprise Intelligence (FR23–FR27, ADR-0008):** deterministic risk scoring, retirement what-if, drift signals (lifecycle / `REPLACED_BY` / unresolved queue), and technology/engine rationalization. Optional LLM narrative via `INTELLIGENCE_NARRATIVE_ENABLED`. Ask/Investigate paths unchanged.
+- **Source–graph delete reconciliation (FR28, ADR-0009):** after ingestion upsert, report stale nodes/rels vs the current source parse set (dry-run only; no apply flag).
 - **MVP4 Agentic Investigation (FR20–FR22, ADR-0007):** separate `/investigate` flow with required evidence skeleton, bounded allowlisted tool calls, grounded report + step trace. Opt-in via `AGENTIC_INVESTIGATION_ENABLED`. Ask paths unchanged.
 - **MVP3 Hybrid Graph + Document RAG (FR17–FR19, ADR-0006):** `Document` + `DOCUMENTED_BY`, synthetic Meridian architecture docs, local SQLite vector index (`src/retrieval/`), and open-ended Ask fusion of subgraph + top-k chunks when `HYBRID_DOC_RAG_ENABLED=true`. Citations may be graph edges and/or document chunk ids; unsupported claims refuse.
 - **MVP2 Graph RAG (FR14–FR16, ADR-0005):** open-ended Ask over a deterministically retrieved dependency subgraph with OpenAI-backed grounded generation (`LLMAnswerGenerator`). Closed 7-question templates remain fully deterministic. Opt-in via `GRAPH_RAG_ENABLED` + `OPENAI_API_KEY`. Citations are filtered to the retrieved subgraph; unanswered / fabricated citations become `insufficient_evidence`.

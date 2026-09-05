@@ -61,7 +61,7 @@ Score = min(100, sum). Bands: 0–24 `low`, 25–49 `medium`, 50–74 `high`,
 - **Harder**: formula tuning may need revisiting as Meridian data grows —
   constants live in one module for that reason.
 - **Rejected: mutating what-if / scenario history** — deferred.
-- **Rejected: full delete-on-source-removal reconciliation** — deferred;
-  resolution-queue drift is the v1 catalog consistency signal.
+- **Rejected: full delete-on-source-removal reconciliation in MVP5** —
+  deferred then; implemented later as opt-in hard delete (`ADR-0009`).
 - **Rejected: Technology/Environment as graph nodes** — stay properties
   (`DATA_MODEL.md`).

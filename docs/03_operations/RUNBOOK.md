@@ -134,6 +134,18 @@ OPENAI_API_KEY=sk-...
 Open `/intelligence` for the hub (drift + rationalize links). Entity detail
 pages show risk score and a retirement what-if panel (`ADR-0008`).
 
+### Source–graph reconciliation (ADR-0009)
+
+Ingestion always upserts, then diffs the graph against the current source
+parse set and prints a **dry-run** of stale nodes/relationships:
+
+```bash
+python -m src.ingestion.run
+```
+
+Ingestion does **not** delete stale membership (no apply flag). To fully
+reset Neo4j, use `docker-compose down -v` then re-ingest (see Rollback).
+
 ### Tests
 
 ```bash
@@ -167,6 +179,7 @@ None for MVP1. NL query requests are logged as structured JSON lines to a local 
 | Enable Agentic Investigate | Set `AGENTIC_INVESTIGATION_ENABLED=true` and open `/investigate` |
 | Open Intelligence hub | Visit `/intelligence` (risk on entity pages; drift + rationalize reports) |
 | Enable intelligence narrative | Set `INTELLIGENCE_NARRATIVE_ENABLED=true` (+ `OPENAI_API_KEY`) |
+| Dry-run stale graph membership | `python -m src.ingestion.run` (reports would-delete; does not delete) |
 
 ## Incidents
 

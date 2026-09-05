@@ -36,6 +36,16 @@ class GraphStore(Protocol):
         """Create-or-update a relationship between two already-upserted nodes."""
         ...
 
+    def delete_relationship(self, source_id: str, target_id: str, rel_type: str) -> bool:
+        """Remove one relationship by endpoints + type. Returns True if deleted."""
+        ...
+
+    def delete_node(self, entity_id: str) -> bool:
+        """Detach any remaining incident relationships, then delete the node.
+        Returns True if a node was removed.
+        """
+        ...
+
     def count_nodes(self, label: str | None = None) -> int: ...
 
     def count_relationships(self, rel_type: str | None = None) -> int: ...

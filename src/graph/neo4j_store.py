@@ -61,6 +61,31 @@ class Neo4jGraphStore:
                 props=props,
             )
 
+    def delete_relationship(self, source_id: str, target_id: str, rel_type: str) -> bool:
+        if rel_type not in RELATIONSHIP_TYPES:
+            raise ValueError(
+                f"Unknown relationship type {rel_type!r}; "
+                f"expected one of {sorted(RELATIONSHIP_TYPES)}"
+            )
+        with self._driver.session() as session:
+            result = session.run(
+                f"MATCH (s {{id: $source_id}})-[r:{rel_type}]->(t {{id: $target_id}}) "
+                "DELETE r RETURN count(r) AS c",
+                source_id=source_id,
+                target_id=target_id,
+            )
+            record = result.single()
+            return bool(record and record["c"] > 0)
+
+    def delete_node(self, entity_id: str) -> bool:
+        with self._driver.session() as session:
+            result = session.run(
+                "MATCH (n {id: $id}) DETACH DELETE n RETURN count(n) AS c",
+                id=entity_id,
+            )
+            record = result.single()
+            return bool(record and record["c"] > 0)
+
     def count_nodes(self, label: str | None = None) -> int:
         query = f"MATCH (n{':' + label if label else ''}) RETURN count(n) AS c"
         with self._driver.session() as session:

@@ -83,6 +83,12 @@ Each FR is traceable to an increment todo (this project tracks delivery via the 
 | FR26 | Technology rationalization report: aggregate Applications/Services by `technology` and Databases by `engine` with counts, criticality/lifecycle mix, and owners. | increment-35-rationalize |
 | FR27 | When `INTELLIGENCE_NARRATIVE_ENABLED`, optionally narrate risk/what-if factor JSON via LLM citing only provided factor ids (never invent scores). | increment-36-narrative-evals |
 
+## Functional requirements (source–graph reconciliation)
+
+| ID | Requirement | Increment |
+|----|-------------|-----------|
+| FR28 | After ingestion upsert, report nodes/relationships present in the graph but absent from the current source parse set (dry-run only; no apply/delete flag in v1). | increment-38-store-delete / increment-39-reconcile / increment-40-cli |
+
 ### The 7 supported natural-language questions (FR11/FR13 closed template set)
 
 1. What applications/services directly consume Customer API v1?
@@ -124,14 +130,16 @@ Any question outside this set (or referencing an unresolvable entity) returns an
 - **Evidence / provenance** — the source system, source record, and (for relationships) documented-vs-inferred status backing a fact in the graph; every UI answer must be traceable to evidence (FR12).
 - **Golden question** — one of the 7 fixed NL question templates (or the corresponding golden-dataset scenario) used to evaluate the NL query layer.
 
-## Out of scope (still deferred past MVP5)
+## Out of scope (still deferred past reconciliation v1)
 
 - Ask auto-escalation into Investigate (rejected for MVP4 v1; see `ADR-0007`).
 - Rewriting the 7 closed MVP1 answers with an LLM (rejected in `ADR-0005`).
 - Free Text2Cypher as the primary retrieval path (rejected in MVP2/MVP4/MVP5 v1).
 - Real Confluence/SharePoint connectors or Neo4j-native vector indexes (MVP3 v1 uses synthetic Meridian docs + local SQLite vectors; see `ADR-0006`).
 - Persisted what-if scenario history / mutating simulated graphs (rejected for MVP5 v1; see `ADR-0008`).
-- Full source-vs-graph delete reconciliation (deferred; MVP5 uses unresolved-queue + lifecycle/`REPLACED_BY` drift).
+- Soft-delete / tombstone lifecycle for retracted membership (hard-delete apply not shipped in recon v1; see `ADR-0009`).
+- Automated hard-delete of stale graph membership from ingestion (report-only; apply deferred).
+- Product UI / history for reconciliation runs (CLI + ingestion report in v1).
 - Authentication, authorization, multi-tenancy, cloud deployment.
 - `Table` as a graph node (databases carry a `key_tables` property list instead).
 - `Technology` and `Environment` as graph nodes (kept as properties on `Application`/`Service`).

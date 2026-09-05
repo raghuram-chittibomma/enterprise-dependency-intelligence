@@ -107,6 +107,36 @@ class FallbackGraphStore:
         self._conn.commit()
         self.graph.add_edge(rel.source_id, rel.target_id, key=rel_type, rel_type=rel_type, **props)
 
+    def delete_relationship(self, source_id: str, target_id: str, rel_type: str) -> bool:
+        if rel_type not in RELATIONSHIP_TYPES:
+            raise ValueError(
+                f"Unknown relationship type {rel_type!r}; "
+                f"expected one of {sorted(RELATIONSHIP_TYPES)}"
+            )
+        cur = self._conn.execute(
+            "DELETE FROM relationships WHERE source_id = ? AND target_id = ? AND rel_type = ?",
+            (source_id, target_id, rel_type),
+        )
+        self._conn.commit()
+        deleted = cur.rowcount > 0
+        if self.graph.has_edge(source_id, target_id, key=rel_type):
+            self.graph.remove_edge(source_id, target_id, key=rel_type)
+            deleted = True
+        return deleted
+
+    def delete_node(self, entity_id: str) -> bool:
+        self._conn.execute(
+            "DELETE FROM relationships WHERE source_id = ? OR target_id = ?",
+            (entity_id, entity_id),
+        )
+        cur = self._conn.execute("DELETE FROM nodes WHERE id = ?", (entity_id,))
+        self._conn.commit()
+        deleted = cur.rowcount > 0
+        if entity_id in self.graph:
+            self.graph.remove_node(entity_id)
+            deleted = True
+        return deleted
+
     def count_nodes(self, label: str | None = None) -> int:
         if label:
             return self._conn.execute(
