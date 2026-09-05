@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+
+{% block title %}Investigate &middot; Enterprise Dependency Intelligence{% endblock %}
+
+{% block content %}
+<section class="ask-page investigate-page">
+  <h1>Investigate</h1>
+  <p class="ask-hint">
+    Multi-step change-impact investigation (MVP4). Runs a required evidence
+    skeleton, then up to N allowlisted tools, and returns a grounded report
+    with citations and a step trace. Enable with
+    <code>AGENTIC_INVESTIGATION_ENABLED</code>. Ask remains single-shot on the
+    <a href="/">home page</a>.
+  </p>
+  <form
+    class="ask-form"
+    hx-post="/investigate"
+    hx-target="#investigate-report"
+    hx-swap="innerHTML"
+    hx-indicator="#investigate-loading"
+    hx-disabled-elt="find button"
+    hx-on::before-request="document.getElementById('investigate-report').innerHTML = ''"
+  >
+    <input
+      type="text"
+      name="q"
+      class="search-input"
+      placeholder="What would be impacted if we retired Customer API v1?"
+      required
+    />
+    <button type="submit" class="ask-submit">Investigate</button>
+  </form>
+  <div
+    id="investigate-loading"
+    class="htmx-indicator ask-loading"
+    role="status"
+    aria-live="polite"
+  >
+    <span class="ask-loading-spinner" aria-hidden="true"></span>
+    Investigation started — gathering evidence and running tools…
+  </div>
+  <div id="investigate-report" class="ask-answer-container"></div>
+</section>
+{% endblock %}

@@ -141,6 +141,9 @@ class TestSearchPage:
         assert response.status_code == 200
         assert 'hx-post="/ask"' in response.text
         assert 'id="ask-answer"' in response.text
+        assert 'id="ask-loading"' in response.text
+        assert "hx-indicator" in response.text
+        assert "hx-disabled-elt" in response.text
 
     def test_static_css_is_served(self, client: TestClient) -> None:
         response = client.get("/static/css/style.css")

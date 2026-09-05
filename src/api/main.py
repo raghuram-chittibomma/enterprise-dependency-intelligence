@@ -15,7 +15,7 @@ from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
-from src.api.routes import ask, entities, pages, paths, search
+from src.api.routes import ask, entities, investigate, pages, paths, search
 from src.env_loader import load_project_env
 from src.graph.config import get_graph_store
 
@@ -43,6 +43,7 @@ def create_app() -> FastAPI:
     app.include_router(entities.router)
     app.include_router(paths.router)
     app.include_router(ask.router)
+    app.include_router(investigate.router)
     return app
 
 

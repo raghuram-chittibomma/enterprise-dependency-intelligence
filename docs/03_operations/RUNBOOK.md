@@ -106,6 +106,21 @@ OPENAI_API_KEY=sk-...
 
 Vectors live under `data/vectors/` (SQLite). Re-run `index_docs` whenever docs change.
 
+### Agentic Investigation (MVP4)
+
+Separate from Ask. Enable in `.env`:
+
+```
+AGENTIC_INVESTIGATION_ENABLED=true
+OPENAI_API_KEY=sk-...
+# AGENTIC_MAX_TOOL_CALLS=3
+```
+
+Open `/investigate`, enter a change-impact style question naming a Meridian entity
+(e.g. "What would be impacted if we retired Customer API v1?"). The run always
+executes a required evidence skeleton, then up to N allowlisted tool calls, then
+a grounded report with evidence and a step trace (`ADR-0007`).
+
 ### Tests
 
 ```bash
@@ -136,6 +151,7 @@ None for MVP1. NL query requests are logged as structured JSON lines to a local 
 | Enable open-ended Graph RAG Ask | Set `GRAPH_RAG_ENABLED=true` and `OPENAI_API_KEY` in `.env` (or the shell) |
 | Index architecture docs for Hybrid Ask | `python -m src.retrieval.index_docs` (after datagen + ingestion) |
 | Enable Hybrid Graph + Document RAG | Set `HYBRID_DOC_RAG_ENABLED=true` (requires Graph RAG + API key) |
+| Enable Agentic Investigate | Set `AGENTIC_INVESTIGATION_ENABLED=true` and open `/investigate` |
 
 ## Incidents
 

@@ -65,6 +65,14 @@ Each FR is traceable to an increment todo (this project tracks delivery via the 
 | FR18 | Index document chunks into a local vector store and, when Hybrid Doc RAG is enabled, retrieve top-k passages alongside the MVP2 subgraph for open-ended Ask. | increment-23-vector-index / increment-24-hybrid-ask |
 | FR19 | Open-ended answers may cite graph edges and/or document chunk ids present in the fused retrieval; refuse when neither supports the claim (extends FR15/FR16). | increment-24-hybrid-ask / increment-25-evals |
 
+## Functional requirements (MVP4 — Agentic Investigation)
+
+| ID | Requirement | Increment |
+|----|-------------|-----------|
+| FR20 | When Agentic Investigation is enabled, run a multi-step investigation from a dedicated Investigate entry and receive an evidence-backed report (skeleton gather + bounded allowlisted tools). | increment-27-tools / increment-28-agent / increment-29-ui |
+| FR21 | Investigation reports cite only graph edges and/or document chunks gathered during the run; refuse or mark insufficient when unsupported (extends FR15/FR16/FR19). | increment-28-agent / increment-30-evals |
+| FR22 | Show a compact investigation step trace (tools invoked + budgets) alongside report evidence. | increment-29-ui / increment-30-evals |
+
 ### The 7 supported natural-language questions (FR11/FR13 closed template set)
 
 1. What applications/services directly consume Customer API v1?
@@ -81,8 +89,8 @@ Any question outside this set (or referencing an unresolvable entity) returns an
 
 | Category | Requirement |
 |---|---|
-| AI boundary | Zero LLM calls on MVP1 structured paths (FR1–FR10) and the closed 7-question NL templates (FR11). MVP2/MVP3 allow an LLM **only** on the open-ended Ask path behind `answer_generator` (`ADR-0005`/`ADR-0006`), gated by `GRAPH_RAG_ENABLED` (+ `HYBRID_DOC_RAG_ENABLED` for doc fusion). |
-| Correctness | No fabricated relationships or doc claims. Closed NL answers remain enumerable; open-ended answers may only assert retrieved subgraph edges and/or retrieved doc chunks (FR15/FR16/FR19). |
+| AI boundary | Zero LLM calls on MVP1 structured paths (FR1–FR10) and the closed 7-question NL templates (FR11). MVP2/MVP3 allow an LLM **only** on the open-ended Ask path (`ADR-0005`/`ADR-0006`). MVP4 allows an LLM on the separate Investigate path behind allowlisted tools (`ADR-0007`), gated by `AGENTIC_INVESTIGATION_ENABLED`. |
+| Correctness | No fabricated relationships or doc claims. Closed NL answers remain enumerable; open-ended Ask and Investigate reports may only assert gathered evidence (FR15/FR16/FR19/FR21). |
 | Performance | Sub-second response for traversals up to depth 4 over the ~150–250 node / synthetic-scale MVP1 graph. |
 | Idempotency | Ingestion is safe to re-run: re-running the pipeline twice produces zero duplicate nodes/relationships (`MERGE` on natural key). |
 | Provenance | Every node and relationship carries `source_system`, `source_record_id`, and (relationships only) `evidence_type` (`documented` \| `inferred`). MVP1 sources only ever write `documented`. |
@@ -106,11 +114,11 @@ Any question outside this set (or referencing an unresolvable entity) returns an
 - **Evidence / provenance** — the source system, source record, and (for relationships) documented-vs-inferred status backing a fact in the graph; every UI answer must be traceable to evidence (FR12).
 - **Golden question** — one of the 7 fixed NL question templates (or the corresponding golden-dataset scenario) used to evaluate the NL query layer.
 
-## Out of scope (still deferred past MVP3)
+## Out of scope (still deferred past MVP4)
 
-- Multi-step agentic investigation (deferred to MVP4).
+- Ask auto-escalation into Investigate (rejected for MVP4 v1; see `ADR-0007`).
 - Rewriting the 7 closed MVP1 answers with an LLM (rejected in `ADR-0005`).
-- Free Text2Cypher as the primary open-ended retrieval path (rejected in MVP2 v1; see `ADR-0005`).
+- Free Text2Cypher as the primary retrieval path (rejected in MVP2/MVP4 v1).
 - Real Confluence/SharePoint connectors or Neo4j-native vector indexes (MVP3 v1 uses synthetic Meridian docs + local SQLite vectors; see `ADR-0006`).
 - Risk scoring, drift detection, what-if analysis, technology rationalization reporting (deferred to MVP5).
 - Authentication, authorization, multi-tenancy, cloud deployment.

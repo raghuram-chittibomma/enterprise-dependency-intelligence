@@ -10,6 +10,9 @@
       hx-get="/entities/{{ source_id }}/paths/result?target={{ r.id }}"
       hx-target="#path-result"
       hx-swap="innerHTML"
+      hx-indicator="#path-loading"
+      hx-disabled-elt="this"
+      hx-on::before-request="document.getElementById('path-result').innerHTML = ''"
     >
       <div class="search-result-heading">
         <span class="entity-label">{{ r.label }}</span>

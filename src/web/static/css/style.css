@@ -34,6 +34,22 @@ body {
   gap: 0.75rem;
   padding: 1rem 1.5rem;
   border-bottom: 1px solid var(--color-border);
+  flex-wrap: wrap;
+}
+
+.app-nav {
+  display: flex;
+  gap: 0.85rem;
+  font-size: 0.9rem;
+}
+
+.app-nav a {
+  color: var(--color-accent);
+  text-decoration: none;
+}
+
+.app-nav a:hover {
+  text-decoration: underline;
 }
 
 .app-title {
@@ -364,6 +380,11 @@ body {
   cursor: pointer;
 }
 
+.path-target-button:disabled {
+  opacity: 0.65;
+  cursor: wait;
+}
+
 .path-result {
   margin-top: 1rem;
 }
@@ -490,8 +511,52 @@ body {
   cursor: pointer;
 }
 
-.ask-submit:hover {
+.ask-submit:hover:not(:disabled) {
   filter: brightness(1.08);
+}
+
+.ask-submit:disabled {
+  opacity: 0.65;
+  cursor: wait;
+}
+
+/* HTMX request feedback — shared by Ask, Investigate, and path find */
+.htmx-indicator {
+  display: none;
+}
+
+.htmx-indicator.htmx-request {
+  display: flex;
+}
+
+.ask-loading,
+.path-loading {
+  align-items: center;
+  gap: 0.65rem;
+  margin-top: 1rem;
+  padding: 0.85rem 1.1rem;
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-left: 3px solid var(--color-accent);
+  border-radius: var(--radius);
+}
+
+.ask-loading-spinner {
+  width: 1rem;
+  height: 1rem;
+  border: 2px solid var(--color-border);
+  border-top-color: var(--color-accent);
+  border-radius: 50%;
+  flex-shrink: 0;
+  animation: ask-spin 0.7s linear infinite;
+}
+
+@keyframes ask-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .ask-answer-container {
@@ -653,5 +718,21 @@ body {
 .evidence-record {
   font-size: 0.75rem;
   color: var(--color-text-muted);
+}
+
+.investigate-findings {
+  margin: 0.75rem 0 0;
+  padding-left: 1.2rem;
+}
+
+.investigate-step-list {
+  margin: 0.6rem 0 0;
+  padding-left: 1.2rem;
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
+.investigate-step-list li {
+  margin-bottom: 0.35rem;
 }
 

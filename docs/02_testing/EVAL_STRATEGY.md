@@ -1,6 +1,6 @@
 # Eval Strategy
 
-Status: accepted (MVP1–MVP3; see `ADR-0005`, `ADR-0006`)
+Status: accepted (MVP1–MVP4; see `ADR-0005`, `ADR-0006`, `ADR-0007`)
 
 Read by: Test/Eval Designer Agent.
 
@@ -20,6 +20,13 @@ Read by: Test/Eval Designer Agent.
 2. **Hybrid fusion** — answers that need both graph and doc facts cite both evidence kinds when both were retrieved and used.
 3. **Refusal when docs are irrelevant** — if retrieved chunks cannot support the claim (and graph edges cannot either), refuse rather than inventing.
 
+**MVP4** Agentic Investigate. Additional dimensions:
+
+1. **Skeleton always runs** — required gather steps appear in the step trace before adaptive tools.
+2. **Tool budget** — adaptive tool calls never exceed `AGENTIC_MAX_TOOL_CALLS`.
+3. **Report faithfulness** — cited edges/chunks ⊆ evidence gathered during the run; fabricated citations refuse.
+4. **Allowlist only** — only registered tools may execute (no free Cypher).
+
 ## Golden scenarios
 
 MVP1: one scenario per supported NL question (the 7 templates in `docs/00_project/PRODUCT_BRIEF.md`), plus representative FR1–FR10/FR12/FR13 behaviors, live under `evals/`. Must be **100% pass**.
@@ -28,14 +35,16 @@ MVP2: additional open-ended scenarios under `evals/` covering faithfulness, cita
 
 MVP3: hybrid scenarios (doc-only fact, graph+doc fusion, refusal when docs irrelevant) under `evals/` with **fake embedder + fake LLM** (no network for the commit gate).
 
+MVP4: Investigate scenarios (blast-radius style report, path+owners, refusal, budget enforcement) under `evals/` with **fake LLM** (no network for the commit gate).
+
 ## Judge policy
 
 MVP1: exact match only.
 
-MVP2/MVP3 v1: **code-level grounding checks** on cited edges and/or doc chunk ids (no LLM-as-judge required for the release gate). LLM-as-judge rubrics may be added later if answer phrasing quality needs scoring beyond grounding.
+MVP2–MVP4 v1: **code-level grounding checks** on cited edges and/or doc chunk ids (no LLM-as-judge required for the release gate). LLM-as-judge rubrics may be added later if answer phrasing quality needs scoring beyond grounding.
 
 ## Pass/fail thresholds
 
 MVP1: golden dataset **100% pass**.
 
-MVP2/MVP3: every open-ended / hybrid scenario must pass faithfulness (cited ⊆ retrieved) and refusal scenarios must not claim unsupported relationships or chunks. Fake-LLM/fake-embedder unit tests are required on every commit touching `src/nlquery/` or `src/retrieval/`; live OpenAI integration tests are optional locally.
+MVP2–MVP4: every open-ended / hybrid / investigate scenario must pass faithfulness (cited ⊆ gathered) and refusal scenarios must not claim unsupported relationships or chunks. Fake-LLM unit tests are required on every commit touching `src/nlquery/`, `src/retrieval/`, or `src/investigate/`; live OpenAI integration tests are optional locally.

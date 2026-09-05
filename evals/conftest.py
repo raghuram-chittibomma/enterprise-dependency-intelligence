@@ -22,6 +22,7 @@ def _mvp1_golden_disables_graph_rag(monkeypatch: pytest.MonkeyPatch) -> None:
     """
     monkeypatch.delenv("GRAPH_RAG_ENABLED", raising=False)
     monkeypatch.delenv("HYBRID_DOC_RAG_ENABLED", raising=False)
+    monkeypatch.delenv("AGENTIC_INVESTIGATION_ENABLED", raising=False)
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)
 
 

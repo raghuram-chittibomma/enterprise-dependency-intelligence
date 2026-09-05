@@ -1,0 +1,79 @@
+{% if not query or not query.strip() %}
+{% elif not result %}
+{% elif result.status == "answered" %}
+<article class="ask-answer ask-answer-ok investigate-report">
+  <p class="ask-answer-text">{{ result.summary }}</p>
+  {% if result.seed_entity %}
+  <p class="ask-resolved">
+    Seed:
+    <a href="/entities/{{ result.seed_entity.id }}">{{ result.seed_entity.name }}</a>
+    ({{ result.seed_entity.label }})
+  </p>
+  {% endif %}
+  {% if result.findings %}
+  <ul class="investigate-findings">
+    {% for finding in result.findings %}
+    <li>{{ finding }}</li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+  {% if result.evidence or result.doc_evidence %}
+  <details class="ask-evidence" open>
+    <summary>Evidence ({{ (result.evidence|length) + (result.doc_evidence|length) }})</summary>
+    <ul class="ask-evidence-list">
+      {% for edge in result.evidence %}
+      <li>
+        <a href="/entities/{{ edge.source_id }}">{{ edge.source_name }}</a>
+        <span class="rel-type-badge">{{ edge.rel_type }}</span>
+        <a href="/entities/{{ edge.target_id }}">{{ edge.target_name }}</a>
+        {% if edge.source_system %}
+        <span class="evidence-badge">{{ edge.source_system }} &middot; {{ edge.evidence_type }}</span>
+        {% endif %}
+      </li>
+      {% endfor %}
+      {% for chunk in result.doc_evidence %}
+      <li>
+        <a href="/entities/{{ chunk.document_id }}">{{ chunk.document_name }}</a>
+        <span class="rel-type-badge">DOC_CHUNK</span>
+        <code>{{ chunk.chunk_id }}</code>
+        <div class="ask-doc-excerpt">{{ chunk.text[:240] }}{% if chunk.text|length > 240 %}…{% endif %}</div>
+      </li>
+      {% endfor %}
+    </ul>
+  </details>
+  {% endif %}
+  {% if result.steps %}
+  <details class="ask-evidence investigate-steps">
+    <summary>Investigation steps ({{ result.steps|length }})</summary>
+    <ol class="investigate-step-list">
+      {% for step in result.steps %}
+      <li>
+        <span class="rel-type-badge">{{ step.phase }}</span>
+        <code>{{ step.tool }}</code>
+        <span class="evidence-badge">{{ step.args_summary }}</span>
+        — {{ step.result_summary }}
+      </li>
+      {% endfor %}
+    </ol>
+  </details>
+  {% endif %}
+</article>
+{% else %}
+<article class="ask-answer ask-answer-{{ result.status }} investigate-report">
+  <p class="ask-answer-text">{{ result.summary }}</p>
+  {% if result.steps %}
+  <details class="ask-evidence investigate-steps">
+    <summary>Investigation steps ({{ result.steps|length }})</summary>
+    <ol class="investigate-step-list">
+      {% for step in result.steps %}
+      <li>
+        <span class="rel-type-badge">{{ step.phase }}</span>
+        <code>{{ step.tool }}</code>
+        — {{ step.result_summary }}
+      </li>
+      {% endfor %}
+    </ol>
+  </details>
+  {% endif %}
+</article>
+{% endif %}

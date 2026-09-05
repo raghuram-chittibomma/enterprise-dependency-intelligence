@@ -34,6 +34,9 @@
     hx-post="/ask"
     hx-target="#ask-answer"
     hx-swap="innerHTML"
+    hx-indicator="#ask-loading"
+    hx-disabled-elt="find button"
+    hx-on::before-request="document.getElementById('ask-answer').innerHTML = ''"
   >
     <input
       type="text"
@@ -44,6 +47,15 @@
     />
     <button type="submit" class="ask-submit">Ask</button>
   </form>
+  <div
+    id="ask-loading"
+    class="htmx-indicator ask-loading"
+    role="status"
+    aria-live="polite"
+  >
+    <span class="ask-loading-spinner" aria-hidden="true"></span>
+    Working on your question…
+  </div>
   <div id="ask-answer" class="ask-answer-container"></div>
 </section>
 {% endblock %}

@@ -14,3 +14,11 @@ router = APIRouter()
 async def index(request: Request) -> HTMLResponse:
     templates = request.app.state.templates
     return templates.TemplateResponse(request=request, name="pages/search.html", context={})
+
+
+@router.get("/investigate", response_class=HTMLResponse)
+async def investigate_page(request: Request) -> HTMLResponse:
+    templates = request.app.state.templates
+    return templates.TemplateResponse(
+        request=request, name="pages/investigate.html", context={}
+    )

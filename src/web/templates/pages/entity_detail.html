@@ -145,6 +145,15 @@
     hx-target="#path-target-results"
   />
   <div id="path-target-results" class="search-results"></div>
+  <div
+    id="path-loading"
+    class="htmx-indicator path-loading ask-loading"
+    role="status"
+    aria-live="polite"
+  >
+    <span class="ask-loading-spinner" aria-hidden="true"></span>
+    Finding dependency paths…
+  </div>
   <div id="path-result" class="path-result"></div>
 </section>
 

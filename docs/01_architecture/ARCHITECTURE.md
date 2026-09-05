@@ -63,7 +63,8 @@ flowchart LR
 | Graph store adapter | Uniform interface over the actual graph backend, behind the `GraphStore` extension point (ADR-0001). | `src/graph/store.py` (Neo4j driver-backed); `src/graph/fallback_store.py` (NetworkX+SQLite, only if the primary store is unreachable) |
 | Query templates | Parameterized Cypher (or fallback-store equivalent) implementing FR1–FR10 and FR12: search, detail, direct/transitive traversal, path finding, ownership rollup, capability view, evidence lookup. | `src/graph/queries.py` |
 | NL query layer | Deterministic intent classification → entity resolution → template dispatch for the 7 closed questions (FR11/FR13). When `GRAPH_RAG_ENABLED`, unmatched questions use open-ended subgraph retrieval + `LLMAnswerGenerator` (`ADR-0005`, FR14–FR16). When `HYBRID_DOC_RAG_ENABLED`, fuse top-k doc chunks (`ADR-0006`, FR17–FR19). | `src/nlquery/` |
-| API layer | FastAPI routes exposing search, detail, traversal, paths, ownership, capabilities, NL query, and evidence endpoints. | `src/api/` |
+| Agentic investigation | Separate Investigate entry: required evidence skeleton + bounded allowlisted tool calls + grounded report (`ADR-0007`, FR20–FR22). | `src/investigate/` |
+| API layer | FastAPI routes exposing search, detail, traversal, paths, ownership, capabilities, NL query, Investigate, and evidence endpoints. | `src/api/` |
 | UI layer | Server-rendered Jinja2 templates + HTMX for interactivity + Cytoscape.js (CDN) for subgraph visualization (FR5). No SPA build step. | `src/web/templates/`, `src/web/static/` |
 | Data quality checks | Automated checks for orphan nodes, duplicate natural keys, and referential consistency, run after ingestion and in CI. | `src/quality/`, `tests/` |
 | Golden dataset & evals | One scenario per supported NL question (and key FR behaviors) with expected entities/relationships/paths; must hit 100% pass. | `evals/` |
@@ -97,6 +98,7 @@ Named interface seams, kept in sync with `extensions` in `sdlc.project.yaml`:
 | `source_parser` | `src/ingestion/parsers/base.py::SourceParser` (Protocol) | One parser per MVP1 source (5 total) | New source types (e.g. cloud asset inventory) add a new parser without touching the loader or resolution logic |
 | `entity_resolver` | `src/ingestion/resolution.py::EntityResolver` (Protocol) | Exact natural-key → `rapidfuzz` fallback → unresolved queue (`ADR-0002`) | Embedding-based resolution if fuzzy matching proves insufficient at larger scale |
 | `answer_generator` | `src/nlquery/answering.py::AnswerGenerator` (Protocol) | Deterministic string templates for closed questions (`ADR-0004`); OpenAI `LLMAnswerGenerator` for open-ended when Graph RAG is on (`ADR-0005`) | Local LLM or alternate hosted provider behind the same Protocol |
+| `investigation_tools` | `src/investigate/tools.py` | Allowlisted wrappers over `queries.py` + doc retrieve (`ADR-0007`) | Additional allowlisted tools only — never free Cypher |
 
 ## Key technical decisions
 
@@ -107,3 +109,5 @@ See `docs/01_architecture/DECISIONS/` for full ADRs:
 - [`ADR-0003-provenance-model.md`](DECISIONS/ADR-0003-provenance-model.md) — universal provenance fields on every node/relationship from day one.
 - [`ADR-0004-deterministic-nl-query-layer.md`](DECISIONS/ADR-0004-deterministic-nl-query-layer.md) — zero-LLM NL query layer for MVP1, closed 7-question answer space.
 - [`ADR-0005-graph-rag-tooling.md`](DECISIONS/ADR-0005-graph-rag-tooling.md) — MVP2 open-ended Graph RAG: OpenAI + structured subgraph retrieve, no Text2Cypher v1.
+- [`ADR-0006-hybrid-document-rag.md`](DECISIONS/ADR-0006-hybrid-document-rag.md) — MVP3 Hybrid Doc RAG: Document ontology + local SQLite vectors + fused Ask.
+- [`ADR-0007-agentic-investigation.md`](DECISIONS/ADR-0007-agentic-investigation.md) — MVP4 Investigate: skeleton + bounded allowlisted tools + grounded report.

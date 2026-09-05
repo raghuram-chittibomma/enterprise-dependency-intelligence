@@ -10,13 +10,14 @@ Newest entry first. One entry per release/milestone.
 
 ### Added
 
+- **MVP4 Agentic Investigation (FR20–FR22, ADR-0007):** separate `/investigate` flow with required evidence skeleton, bounded allowlisted tool calls, grounded report + step trace. Opt-in via `AGENTIC_INVESTIGATION_ENABLED`. Ask paths unchanged.
 - **MVP3 Hybrid Graph + Document RAG (FR17–FR19, ADR-0006):** `Document` + `DOCUMENTED_BY`, synthetic Meridian architecture docs, local SQLite vector index (`src/retrieval/`), and open-ended Ask fusion of subgraph + top-k chunks when `HYBRID_DOC_RAG_ENABLED=true`. Citations may be graph edges and/or document chunk ids; unsupported claims refuse.
 - **MVP2 Graph RAG (FR14–FR16, ADR-0005):** open-ended Ask over a deterministically retrieved dependency subgraph with OpenAI-backed grounded generation (`LLMAnswerGenerator`). Closed 7-question templates remain fully deterministic. Opt-in via `GRAPH_RAG_ENABLED` + `OPENAI_API_KEY`. Citations are filtered to the retrieved subgraph; unanswered / fabricated citations become `insufficient_evidence`.
-- Open-ended retrieval (`src/nlquery/graphrag.py`), config helpers, Ask routing, homepage hint, faithfulness/refusal evals (`evals/test_mvp2_graphrag.py`, `evals/test_mvp3_hybrid.py`) and fake-LLM / fake-embedder unit tests.
+- Open-ended retrieval (`src/nlquery/graphrag.py`), Investigate (`src/investigate/`), config helpers, Ask/Investigate UI, faithfulness/refusal evals (`evals/test_mvp2_graphrag.py`, `evals/test_mvp3_hybrid.py`, `evals/test_mvp4_investigate.py`) and fake-LLM / fake-embedder unit tests.
 
 ### Changed
 
-- Docs: ARCHITECTURE, DATA_MODEL (10 nodes / 8 relationships), PRODUCT_BRIEF, EVAL_STRATEGY, RUNBOOK updated for MVP2/MVP3 boundaries.
+- Docs: ARCHITECTURE, DATA_MODEL, PRODUCT_BRIEF, EVAL_STRATEGY, RUNBOOK updated for MVP2–MVP4 boundaries.
 - Ontology expands to `Document` / `DOCUMENTED_BY`; datagen writes `data/sample/docs/`.
 
 ### Fixed
