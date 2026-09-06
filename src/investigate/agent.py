@@ -72,7 +72,15 @@ class ScriptedClient:
 
     def complete(self, *, system: str, user: str) -> str:
         if self._i >= len(self.replies):
-            return json.dumps({"status": "insufficient_evidence", "summary": INSUFFICIENT_TEXT, "findings": [], "citations": [], "doc_citations": []})
+            return json.dumps(
+                {
+                    "status": "insufficient_evidence",
+                    "summary": INSUFFICIENT_TEXT,
+                    "findings": [],
+                    "citations": [],
+                    "doc_citations": [],
+                }
+            )
         text = self.replies[self._i]
         self._i += 1
         return text
@@ -319,7 +327,11 @@ def run_investigation(
     """Public Investigate entry — Ask path stays untouched."""
     q = question.strip()
     if not q:
-        return InvestigationResult(question=question, status="insufficient_evidence", summary=INSUFFICIENT_TEXT)
+        return InvestigationResult(
+            question=question,
+            status="insufficient_evidence",
+            summary=INSUFFICIENT_TEXT,
+        )
 
     seed, unresolved, ambiguous = _resolve_seed(store, q)
     if ambiguous:
@@ -434,7 +446,10 @@ def run_investigation(
     status = parsed.get("status", "insufficient_evidence")
     summary = str(parsed.get("summary") or "").strip() or INSUFFICIENT_TEXT
     findings_raw = parsed.get("findings") or []
-    findings = [str(f) for f in findings_raw if str(f).strip()] if isinstance(findings_raw, list) else []
+    if isinstance(findings_raw, list):
+        findings = [str(f) for f in findings_raw if str(f).strip()]
+    else:
+        findings = []
 
     has_retrieval = bool(bundle.edges) or bool(bundle.docs)
     has_cites = bool(citations) or bool(doc_citations)

@@ -111,9 +111,21 @@ def narrate_whatif(
 
     # Synthetic factor ids for what-if narrative gating.
     factors = [
-        {"id": "blast", "label": f"{len(result.downstream)} downstream entities", "points": len(result.downstream)},
-        {"id": "stakeholders", "label": f"{len(result.stakeholder_teams)} teams", "points": len(result.stakeholder_teams)},
-        {"id": "capabilities", "label": f"{len(result.capabilities)} capabilities", "points": len(result.capabilities)},
+        {
+            "id": "blast",
+            "label": f"{len(result.downstream)} downstream entities",
+            "points": len(result.downstream),
+        },
+        {
+            "id": "stakeholders",
+            "label": f"{len(result.stakeholder_teams)} teams",
+            "points": len(result.stakeholder_teams),
+        },
+        {
+            "id": "capabilities",
+            "label": f"{len(result.capabilities)} capabilities",
+            "points": len(result.capabilities),
+        },
     ]
     allowed = {f["id"] for f in factors}
     payload = {

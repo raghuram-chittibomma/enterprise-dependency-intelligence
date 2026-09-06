@@ -18,8 +18,8 @@ from src.graph.queries import (
     get_direct_capabilities,
     get_direct_dependencies,
     get_entity_detail,
-    get_owning_team,
     get_ownership_rollup,
+    get_owning_team,
 )
 from src.graph.store import GraphStore
 from src.investigate.config import agentic_max_traversal_depth
@@ -223,7 +223,11 @@ def _ingest_capabilities(
                     # Prefer edges involving seed or known entities.
                     if rel["source_id"] == entity_id or rel["source_id"] in bundle.entity_ids:
                         ev = _edge_from_rel(
-                            store, rel["source_id"], rel["target_id"], "SUPPORTS", node_by_id=node_by_id
+                            store,
+                            rel["source_id"],
+                            rel["target_id"],
+                            "SUPPORTS",
+                            node_by_id=node_by_id,
                         )
                         if ev:
                             bundle.add_edge(ev)

@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from pathlib import Path
-
 from src.datagen import generate
 from src.retrieval.chunking import chunk_markdown
 from src.retrieval.embeddings import FakeEmbedder, cosine_similarity

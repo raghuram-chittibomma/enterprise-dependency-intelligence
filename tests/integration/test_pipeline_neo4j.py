@@ -23,7 +23,8 @@ def store():
 
     os.environ.setdefault("GRAPH_STORE_BACKEND", "neo4j")
     candidate = get_graph_store()
-    assert isinstance(candidate, Neo4jGraphStore)
+    if not isinstance(candidate, Neo4jGraphStore):
+        pytest.skip("Neo4j backend not configured (GRAPH_STORE_BACKEND != neo4j)")
     result = candidate.health_check()
     if not result.ok:
         candidate.close()

@@ -88,8 +88,9 @@ def test_pipeline_reports_extra_but_keeps_it(tmp_path) -> None:
 
 
 def test_no_reconcile_apply_flag_on_cli() -> None:
-    from src.ingestion import run as run_mod
     import inspect
+
+    from src.ingestion import run as run_mod
 
     source = inspect.getsource(run_mod)
     assert "reconcile-apply" not in source

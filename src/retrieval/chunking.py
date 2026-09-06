@@ -41,7 +41,13 @@ def chunk_markdown(document_id: str, markdown: str, *, max_chars: int = 800) -> 
             buffer = ""
             return
         digest = hashlib.sha1(f"{document_id}:{ordinal}:{text}".encode()).hexdigest()[:12]
-        chunks.append(TextChunk(chunk_id=f"{document_id}#c{ordinal}-{digest}", text=text, ordinal=ordinal))
+        chunks.append(
+            TextChunk(
+                chunk_id=f"{document_id}#c{ordinal}-{digest}",
+                text=text,
+                ordinal=ordinal,
+            )
+        )
         ordinal += 1
         buffer = ""
 
