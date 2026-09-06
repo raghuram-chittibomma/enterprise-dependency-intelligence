@@ -23,8 +23,8 @@ async def investigate_route(
     result = None
     if q.strip():
         if not agentic_investigation_enabled():
-            from src.investigate.models import InvestigationResult
             from src.investigate.agent import DISABLED_TEXT
+            from src.investigate.models import InvestigationResult
 
             result = InvestigationResult(question=q, status="disabled", summary=DISABLED_TEXT)
         else:

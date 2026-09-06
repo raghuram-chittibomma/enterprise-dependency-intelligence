@@ -11,5 +11,6 @@ dist/
 .env
 data/unresolved/
 data/vectors/
+data/graph_fallback.sqlite3
 *.log
 .DS_Store

@@ -3,10 +3,9 @@
 from __future__ import annotations
 
 from src.graph.store import GraphStore
-from src.investigate.agent import ChatClient, run_investigation
+from src.investigate.agent import DISABLED_TEXT, ChatClient, run_investigation
 from src.investigate.config import agentic_investigation_enabled
 from src.investigate.models import InvestigationResult
-from src.investigate.agent import DISABLED_TEXT
 
 
 def investigate(
