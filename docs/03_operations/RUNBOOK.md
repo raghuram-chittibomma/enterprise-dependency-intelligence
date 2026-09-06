@@ -8,52 +8,40 @@ Read by: `readme-runbook-documentation` skill.
 
 ### Prerequisites
 
-- Python 3.11+ (3.14 verified locally) with a virtualenv at `.venv/`.
-- Docker CLI + Compose available locally (installed via `winget install Docker.DockerCLI Docker.DockerCompose` on Windows dev machines that don't run Docker Desktop themselves).
-- Network access to the remote LAN Docker host at `192.168.4.52` (see below) — or willingness to fall back to the embedded NetworkX+SQLite store per `ADR-0001-graph-store-selection.md`.
+- Python 3.11+ with a virtualenv at `.venv/`.
+- Docker Engine + Compose (Docker Desktop, or equivalent) so Neo4j can run locally.
+- Optional: willingness to use the embedded NetworkX+SQLite store (`GRAPH_STORE_BACKEND=fallback`) if Docker/Neo4j is unavailable — see `ADR-0001-graph-store-selection.md`.
 
-### Remote Docker host connectivity (Neo4j runs here, not on the dev machine)
+### Graph store (localhost)
 
-The dev machine does not run a local Docker daemon; Neo4j runs as a container on a separate Windows host on the LAN (`192.168.4.52`). One-time setup on **that host**:
-
-1. Docker Desktop → Settings → General → enable "Expose daemon on tcp://localhost:2375 without TLS".
-2. Forward the LAN-facing interface to the loopback daemon:
-   ```powershell
-   netsh interface portproxy add v4tov4 listenaddress=192.168.4.52 listenport=2375 connectaddress=127.0.0.1 connectport=2375
-   ```
-3. Open the port in Windows Firewall, scoped to the dev machine's IP only:
-   ```powershell
-   New-NetFirewallRule -DisplayName "Docker daemon (dev machine only)" -Direction Inbound -Protocol TCP -LocalPort 2375 -RemoteAddress 192.168.4.42 -Action Allow
-   ```
-
-From the **dev machine**, point the Docker CLI at the remote daemon for the current session:
-
-```powershell
-$env:DOCKER_HOST = "tcp://192.168.4.52:2375"
-docker version         # confirms the remote daemon is reachable
-docker-compose version # this environment installs docker-compose as a standalone binary, not a `docker compose` plugin — use the hyphenated form
-```
-
-Set `$env:DOCKER_HOST` in every new shell before running Docker/Compose commands against the graph store (or add it to your PowerShell profile).
-
-### Graph store
+From the repo root:
 
 ```bash
-# From the repo root, with DOCKER_HOST set as above:
-docker-compose up -d neo4j
-# Neo4j Browser: http://192.168.4.52:7474  |  Bolt: bolt://192.168.4.52:7687
-# Default local dev credentials: neo4j / edi-local-dev (override via NEO4J_PASSWORD)
+docker compose up -d neo4j
+# Neo4j Browser: http://localhost:7474  |  Bolt: bolt://localhost:7687
+# Default local-dev credentials (synthetic data only): neo4j / edi-local-dev
+# Override via NEO4J_PASSWORD in the shell or `.env`
 
 python -m src.graph.healthcheck    # verifies connectivity and bootstraps schema constraints
 ```
 
-If the remote host is unreachable, set `GRAPH_STORE_BACKEND=fallback` (see `ADR-0001-graph-store-selection.md`) to use the embedded NetworkX+SQLite store instead — no Docker required, reduced feature parity is acceptable for local iteration only:
+If Compose is installed as a standalone binary on your machine, use `docker-compose` (hyphen) instead of `docker compose`.
+
+If Neo4j is unreachable, set `GRAPH_STORE_BACKEND=fallback` to use the embedded NetworkX+SQLite store instead — no Docker required; reduced feature parity is acceptable for local iteration only:
 
 ```bash
-$env:GRAPH_STORE_BACKEND = "fallback"     # PowerShell; use export on bash/zsh
+# PowerShell
+$env:GRAPH_STORE_BACKEND = "fallback"
+python -m src.graph.healthcheck
+
+# bash/zsh
+export GRAPH_STORE_BACKEND=fallback
 python -m src.graph.healthcheck
 ```
 
+### Optional: remote Docker host
+
+If Neo4j runs on another machine, point the app at it with `NEO4J_URI` (and credentials) in `.env`. To drive Compose against a remote Docker daemon, set `DOCKER_HOST` for that session (prefer TLS; avoid exposing an unauthenticated Docker TCP port on a LAN). Do not commit private hostnames or LAN IPs to the repo.
 ### Application
 
 ```bash

@@ -1,5 +1,9 @@
 # Enterprise Dependency Intelligence
 
+[![CI](https://github.com/raghuram-chittibomma/enterprise-dependency-intelligence/actions/workflows/ci.yml/badge.svg)](https://github.com/raghuram-chittibomma/enterprise-dependency-intelligence/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue.svg)](pyproject.toml)
+
 A knowledge-graph application that answers **how enterprise systems depend on each other**—with every claim traceable to graph evidence and its source system.
 
 It is built around a fictional retail enterprise, **Meridian Retail Group**, so the product can be developed and demoed end-to-end without real company data.
@@ -227,19 +231,31 @@ AGENTS.md                         Rules for AI coding agents
 
 ## Getting started
 
-Local setup (Python venv, Neo4j via Docker, ingest, run the app, tests) is documented in:
+### Quick local demo
 
-**[`docs/03_operations/RUNBOOK.md`](docs/03_operations/RUNBOOK.md)**
-
-Typical flow once prerequisites are in place:
+Requires Python 3.11+ and Docker Compose.
 
 ```bash
+python -m venv .venv
+# Windows: .venv\Scripts\Activate.ps1
+# macOS/Linux: source .venv/bin/activate
+pip install -r requirements.txt
+copy .env.example .env          # Windows; on Unix: cp .env.example .env
+
+docker compose up -d neo4j      # Browser http://localhost:7474 · Bolt bolt://localhost:7687
+python -m src.graph.healthcheck
 python -m src.datagen.generate
 python -m src.ingestion.run
 uvicorn src.api.main:app --reload --host 127.0.0.1 --port 8001
 ```
 
-Copy `.env.example` → `.env` for graph connection and optional feature flags (`GRAPH_RAG_ENABLED`, `HYBRID_DOC_RAG_ENABLED`, `AGENTIC_INVESTIGATION_ENABLED`, `INTELLIGENCE_NARRATIVE_ENABLED`). Never commit `.env`.
+Open **http://127.0.0.1:8001** — search for `Customer API`, ask a closed question, or browse Intelligence.
+
+Optional LLM features (`GRAPH_RAG_ENABLED`, `HYBRID_DOC_RAG_ENABLED`, `AGENTIC_INVESTIGATION_ENABLED`, `INTELLIGENCE_NARRATIVE_ENABLED`) need an `OPENAI_API_KEY` in `.env`. Never commit `.env`.
+
+If Neo4j is unavailable, set `GRAPH_STORE_BACKEND=fallback` for the embedded NetworkX+SQLite store.
+
+Full setup, quality checks, and feature flags: **[`docs/03_operations/RUNBOOK.md`](docs/03_operations/RUNBOOK.md)**
 
 ---
 
@@ -254,3 +270,5 @@ Copy `.env.example` → `.env` for graph connection and optional feature flags (
 | [`docs/media/screenshots/`](docs/media/screenshots/) | UI screenshots |
 | [`docs/01_architecture/DECISIONS/`](docs/01_architecture/DECISIONS/) | Architecture Decision Records |
 | [`docs/03_operations/RELEASE_NOTES.md`](docs/03_operations/RELEASE_NOTES.md) | What shipped per milestone |
+| [`SECURITY.md`](SECURITY.md) | Secrets, synthetic-data policy, reporting |
+| [`LICENSE`](LICENSE) | MIT |

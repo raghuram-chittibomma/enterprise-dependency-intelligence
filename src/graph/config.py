@@ -12,7 +12,7 @@ from src.graph.store import GraphStore
 
 load_project_env()
 
-DEFAULT_NEO4J_URI = "bolt://192.168.4.52:7687"
+DEFAULT_NEO4J_URI = "bolt://localhost:7687"
 DEFAULT_NEO4J_USER = "neo4j"
 DEFAULT_NEO4J_PASSWORD = "edi-local-dev"
 DEFAULT_FALLBACK_SQLITE_PATH = "data/graph_fallback.sqlite3"

@@ -44,6 +44,6 @@ Large enterprises operate hundreds of applications, APIs, services, databases, p
 ## Constraints
 
 - Local-first development; no cloud dependency for MVP1.
-- Graph store runs as a Docker container on a remote LAN Docker host (`192.168.4.52`), accessed via `DOCKER_HOST=tcp://192.168.4.52:2375` from the dev machine — see `docs/03_operations/RUNBOOK.md`.
+- Graph store runs as Neo4j Community Edition via Docker Compose (default `bolt://localhost:7687`); NetworkX+SQLite fallback if Neo4j is unavailable — see `docs/03_operations/RUNBOOK.md` and `ADR-0001`.
 - Python 3.11+ (3.14 in local dev) for all backend/ingestion/graph code.
 - Synthetic data only — no real company or customer data (enforced by the `synthetic-data-design` skill).
